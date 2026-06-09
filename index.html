@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>وكلاء الموارد البشرية · نُمكّن النمو</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet" />
+
+<!-- Runtime libraries (loaded from CDN; no build step) -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  :root{
+    --bg:#EAEEEC; --sidebar:#16261F; --side-text:#E9EDEA; --side-muted:#90A39A;
+    --ink:#1B2A26; --muted:#6E7B76; --border:#D7DDD9; --surface:#FFFFFF;
+    --brass:#B7894A; --user:#233A33;
+  }
+  *{box-sizing:border-box}
+  html,body,#root{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  button{cursor:pointer;font-family:inherit}
+  button:disabled{cursor:default}
+  textarea,input{font-family:inherit}
+  textarea::placeholder,input::placeholder{color:#9AA8A2}
+  :focus-visible{outline:2px solid #1A6B52;outline-offset:2px}
+  .hra-scroll::-webkit-scrollbar{width:10px;height:8px}
+  .hra-scroll::-webkit-scrollbar-thumb{background:rgba(20,38,31,.18);border-radius:20px}
+  .hra-scroll::-webkit-scrollbar-track{background:transparent}
+  .hra-fade{animation:hraUp .26s ease both}
+  @keyframes hraUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .hra-spin{animation:hraSpin .9s linear infinite}
+  @keyframes hraSpin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.hra-fade,.hra-spin{animation:none !important}}
+  .splash{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px}
+</style>
+</head>
+<body>
+<div id="root"><div class="splash">جارٍ تحميل لوحة الوكلاء...</div></div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+if (window.pdfjsLib) {
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
+/* ============================ Tokens & helpers ============================ */
+const T = {
+  bg:"#EAEEEC", sidebar:"#16261F", sideText:"#E9EDEA", sideMuted:"#90A39A",
+  ink:"#1B2A26", muted:"#6E7B76", border:"#D7DDD9", surface:"#FFFFFF",
+  brass:"#B7894A", user:"#233A33",
+};
+const uid = () => Math.random().toString(36).slice(2);
+const hexToRgba = (hex, a) => {
+  const n = hex.replace("#","");
+  const r=parseInt(n.slice(0,2),16), g=parseInt(n.slice(2,4),16), b=parseInt(n.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+};
+
+/* ============================ Icons ============================ */
+function Svg({size=20,color="currentColor",sw=2,fill="none",children}){
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
+}
+const IconScale = p => <Svg {...p}><path d="M12 4v15"/><path d="M7.5 20h9"/><path d="M5 7h14"/><circle cx="12" cy="4" r="1.3"/><path d="M5 7l-2.5 5h5z"/><path d="M19 7l-2.5 5h5z"/></Svg>;
+const IconUserPlus = p => <Svg {...p}><circle cx="9.5" cy="8" r="3.2"/><path d="M4 20c0-3.2 2.5-5.5 5.5-5.5s5.5 2.3 5.5 5.5"/><path d="M18 8v6M15 11h6"/></Svg>;
+const IconSearchDoc = p => <Svg {...p}><circle cx="11" cy="11" r="6"/><path d="M20.5 20.5L16 16"/><path d="M8.5 10h5M8.5 12.5h3"/></Svg>;
+const IconHeart = p => <Svg {...p}><path d="M12 20C12 20 4 14.8 4 9.4 4 7 5.9 5.2 8.1 5.2c1.6 0 2.9 .9 3.9 2.2 1-1.3 2.3-2.2 3.9-2.2C18.1 5.2 20 7 20 9.4 20 14.8 12 20 12 20Z"/></Svg>;
+const IconWallet = p => <Svg {...p}><path d="M4 8v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/><path d="M4 8a2 2 0 0 1 2-2h10"/><circle cx="17" cy="14" r="1.2"/></Svg>;
+const IconChart = p => <Svg {...p}><path d="M4 20h16"/><rect x="6" y="11" width="3" height="7" rx="1" fill={p.color||"currentColor"} stroke="none"/><rect x="11" y="7" width="3" height="11" rx="1" fill={p.color||"currentColor"} stroke="none"/><rect x="16" y="13" width="3" height="5" rx="1" fill={p.color||"currentColor"} stroke="none"/></Svg>;
+const IconDoc = p => <Svg {...p}><path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M8 12h7M8 16h7M8 8h3"/></Svg>;
+const IconSend = p => <Svg {...p}><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></Svg>;
+const IconPlus = p => <Svg {...p}><path d="M12 5v14M5 12h14"/></Svg>;
+const IconUpload = p => <Svg {...p}><path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M5 18v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1"/></Svg>;
+const IconGear = p => <Svg {...p}><path d="M4 8h16M4 16h16"/><circle cx="10" cy="8" r="2.2"/><circle cx="14" cy="16" r="2.2"/></Svg>;
+const IconX = p => <Svg {...p}><path d="M6 6l12 12M18 6 6 18"/></Svg>;
+const IconCheck = p => <Svg {...p}><path d="M5 13l4 4L19 7"/></Svg>;
+const IconSpinner = p => <Svg {...p}><path d="M12 3a9 9 0 1 0 9 9"/></Svg>;
+
+function Seal({Icon, accent, size=42}){
+  return (
+    <div style={{width:size,height:size,borderRadius:"50%",flexShrink:0,background:hexToRgba(accent,.12),border:`1.5px solid ${hexToRgba(accent,.55)}`,boxShadow:`inset 0 0 0 3px ${hexToRgba(accent,.07)}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <Icon size={Math.round(size*0.46)} color={accent}/>
+    </div>
+  );
+}
+
+/* ============================ Prompts ============================ */
+const COMMON = `
+قواعد عامة ملزمة:
+- أجب دائمًا بالعربية الفصحى المهنية ما لم يُطلب غير ذلك.
+- لا تستخدم علامة الشرطة الطويلة إطلاقًا في أي مخرجات.
+- عند كتابة أي بريد أو خطاب رسمي اجعل التوقيع "فريق إدارة الموارد البشرية" فقط، ولا تذكر اسم أي شركة في التوقيع.
+- استند في كل ما يتعلق بنظام العمل السعودي إلى المرسوم م/44 النافذ في 19/2/2025.
+- كن دقيقًا. إن لم تكن متأكدًا من مادة نظامية أو رقم أو نسبة فاذكر ذلك بوضوح ولا تختلق أرقام مواد أو نسبًا.
+- خاطب المستخدم باسم "عاطف" عند المناسبة، وحافظ على نبرة مهنية محترمة.
+- نظّم إجاباتك بعناوين ونقاط عند الحاجة، وقدّم خطوات عملية قابلة للتطبيق.
+- السياق: المستخدم مدير الموارد البشرية والشؤون الإدارية في شركة تقنية مالية سعودية.
+`;
+const LAW_FACTS = `
+مرجع سريع لأهم مواد نظام العمل السعودي (م/44، نافذ 19/2/2025):
+- م53: فترة التجربة بحد أقصى 180 يومًا من بداية العمل دون تمديد، وتُستثنى الإجازات وأيام المرض، ولأي طرف إنهاء العقد خلالها.
+- م77: تعويض الفصل التعسفي = أجر المدة المتبقية للعقد محدد المدة، أو 15 يومًا عن كل سنة بحد أدنى أجر شهرين للعقد غير محدد المدة. لا تُطبّق م77 مع م81؛ فهي حصرًا للفصل التعسفي من صاحب العمل.
+- م84 و85: مكافأة نهاية الخدمة = نصف شهر عن كل سنة لأول خمس سنوات، ثم شهر عن كل سنة لما بعدها.
+- م98: ساعات العمل 8 يوميًا و48 أسبوعيًا، و6 ساعات يوميًا في رمضان.
+- م107: يجوز تعويض ساعات العمل الإضافي بإجازة. م109: الإجازة السنوية 21 يومًا وترتفع إلى 30 يومًا بعد خمس سنوات.
+- م113: إجازة الأبوة 3 أيام. م151: إجازة الوضع 12 أسبوعًا منها 6 إلزامية بعد الوضع.
+- مهلة الإشعار: 60 يومًا من صاحب العمل و30 يومًا من الموظف.
+- م74: إنهاء بالتراضي. م80: إنهاء من صاحب العمل دون مكافأة للأسباب النظامية المحددة. م81: استقالة فورية من الموظف بسبب مخالفات صاحب العمل، وحقوقه: مكافأة نهاية الخدمة (م84) + تعويض الإجازات + تسوية (م88).
+`;
+const GOSI_NOTE = `
+ملاحظة عن التأمينات الاجتماعية: تُحتسب على أجر الاشتراك (الأساسي + بدل السكن ضمن السقف النظامي). النسب الأساسية المعروفة للسعوديين قرابة 9.75% على الموظف ونسبة مماثلة تقريبًا على صاحب العمل، ولغير السعوديين الأخطار المهنية فقط على صاحب العمل. صدر تعديل تدريجي اعتبارًا من 2025، لذا اطلب من عاطف دائمًا التحقق من النسبة المعتمدة للسنة الحالية قبل اعتماد الرقم.
+`;
+
+const AGENTS = [
+  { id:"law", name:"مستشار نظام العمل", role:"الامتثال والعقود والإنهاء", accent:"#2D5B8E", icon:IconScale,
+    intro:"اسألني عن أي مسألة نظامية في علاقات العمل: العقود، الإنهاء، الاستقالة، الإجازات، ومكافأة نهاية الخدمة. أسند رأيي بالمواد وأوضّح المخاطر والبدائل المشروعة.",
+    suggestions:["ما الفرق بين الإنهاء بموجب م77 وم81؟","احسب مكافأة نهاية الخدمة لموظف خدمته 7 سنوات","صِغ بنود فترة تجربة سليمة نظاميًا"],
+    system:`أنت "مستشار نظام العمل والامتثال" ضمن فريق وكلاء الموارد البشرية. تخصصك نظام العمل السعودي ولوائحه: العقود، الإنهاء والاستقالة، مكافأة نهاية الخدمة، الإجازات، ساعات العمل، نطاقات السعودة، والتأمينات من الزاوية النظامية. قدّم رأيًا نظاميًا دقيقًا مسنودًا بالمواد مع توضيح المخاطر والبدائل المشروعة. لا تقترح أي صياغة مضللة أو التفافًا على النظام. اعرض خطوات أي حساب بوضوح.${LAW_FACTS}${COMMON}` },
+  { id:"recruit", name:"أخصائي التوظيف والسعودة", role:"الاستقطاب والمقابلات ونطاقات", accent:"#1A6B52", icon:IconUserPlus,
+    intro:"أساعدك في الأوصاف الوظيفية، معايير الفرز، أسئلة المقابلات، وخطط السعودة ورفع مؤشر نطاقات. اربط مرفقًا للوصف الوظيفي أو سيرة لأبني عليها.",
+    suggestions:["اكتب وصفًا وظيفيًا لمطور Backend في شركة فينتك","جهّز 8 أسئلة مقابلة سلوكية لدور أخصائي موارد بشرية","اقترح خطة لرفع نسبة السعودة في الإدارة"],
+    system:`أنت "أخصائي التوظيف والاستقطاب والسعودة" ضمن فريق وكلاء الموارد البشرية. تساعد في الأوصاف الوظيفية الواقعية وغير المتحيزة، معايير الفرز، أسئلة المقابلات السلوكية والفنية مع معايير تقييم، خطط الإحلال والسعودة، وتحسين مؤشرات نطاقات. راعِ قطاع التقنية المالية، واربط توصياتك بأهداف العمل.${COMMON}` },
+  { id:"cv", name:"مفاضل السير الذاتية", role:"قراءة وفرز وترتيب المرشحين", accent:"#0E7C86", icon:IconSearchDoc, intake:true,
+    intro:"ارفع السير الذاتية (PDF أو DOCX) وأضف الوصف الوظيفي، وسأقرأها وأفاضل بين المرشحين بموضوعية مع درجات ومبررات وترتيب نهائي.",
+    suggestions:[],
+    system:`أنت "أخصائي مفاضلة وفرز السير الذاتية" ضمن فريق وكلاء الموارد البشرية. تقرأ السير وتفاضل بين المرشحين بموضوعية تامة. التزم بالعدالة وعدم التحيز: لا تتأثر بالاسم أو الجنس أو الجنسية أو العمر أو الصورة، واحكم فقط على المهارات والخبرات والإنجازات ومدى مطابقتها للوصف الوظيفي. لكل مرشح: درجة من 100 مع تبرير، نقاط القوة، الفجوات، توصية. ثم جدول مقارنة وترتيب تنازلي وتوصية نهائية بأفضل المرشحين. وضّح أي معلومات ناقصة بدل افتراضها.${COMMON}` },
+  { id:"relations", name:"أخصائي علاقات الموظفين", role:"التظلمات والانضباط والخطابات", accent:"#B7894A", icon:IconHeart,
+    intro:"أتعامل مع الشكاوى والتظلمات والإجراءات التأديبية وخطابات الإنذار وحل النزاعات، موازنًا بين حقوق الموظف وحماية الشركة نظاميًا.",
+    suggestions:["صِغ خطاب إنذار أول لتكرار التأخر عن الدوام","كيف أتعامل مع تظلم موظف بشكل عادل ونظامي؟","اكتب محضر اجتماع لمناقشة مخالفة سلوكية"],
+    system:`أنت "أخصائي علاقات الموظفين والانضباط الوظيفي" ضمن فريق وكلاء الموارد البشرية. تتعامل مع الشكاوى والتظلمات والإجراءات التأديبية وخطابات الإنذار وتحسين بيئة العمل وحل النزاعات. وازن بين حماية حقوق الموظف وحماية الشركة نظاميًا، والتزم بالتدرج التأديبي والإجراءات النظامية، ووضّح متى يكون الفصل بموجب م80 مبررًا. لا تقترح إجراءات تعسفية أو غير موثقة.${LAW_FACTS}${COMMON}` },
+  { id:"comp", name:"أخصائي التعويضات والمزايا", role:"الرواتب والتأمينات والحوافز", accent:"#6A4E93", icon:IconWallet,
+    intro:"أساعدك في هيكلة الرواتب والدرجات والنطاقات، المقارنات المعيارية، حساب التأمينات ومكافأة نهاية الخدمة، وتصميم خطط الحوافز والعمولات، مع عرض الحسابات خطوة بخطوة.",
+    suggestions:["احسب مكوّنات راتب لموظف أساسي 12000 وبدل سكن 3000","صمّم هيكل عمولات لفريق المبيعات","قارن راتب أخصائي موارد بشرية بمستوى السوق السعودي"],
+    system:`أنت "أخصائي التعويضات والمزايا" ضمن فريق وكلاء الموارد البشرية. تساعد في هيكلة الرواتب والدرجات والنطاقات، المقارنات المعيارية، حساب التأمينات ومكافأة نهاية الخدمة، خطط الحوافز والعمولات، والمزايا التأمينية. اعرض الحسابات خطوة بخطوة مع الافتراضات، واطلب التحقق من أي رقم متغير من المصدر الرسمي للسنة الحالية.${LAW_FACTS}${GOSI_NOTE}${COMMON}` },
+  { id:"analytics", name:"محلل الموارد البشرية", role:"المؤشرات والتحليل والتخطيط", accent:"#2F8C8C", icon:IconChart,
+    intro:"أعرّف وأحسب مؤشرات الأداء (الدوران، الاستبقاء، الغياب، وقت الإحلال، تكلفة التوظيف)، وأحلّل القوى العاملة، وأشرح معادلة كل مؤشر وكيفية عرضه.",
+    suggestions:["ما معادلة معدل دوران الموظفين وكيف أفسره؟","اقترح 8 مؤشرات لقياس صحة إدارة الموارد البشرية","صمّم إطار لوحة معلومات شهرية للموارد البشرية"],
+    system:`أنت "محلل بيانات الموارد البشرية والتخطيط الاستراتيجي" ضمن فريق وكلاء الموارد البشرية. تساعد في تعريف وحساب المؤشرات مثل الدوران والاستبقاء والغياب ووقت الإحلال وتكلفة التوظيف، وتحليل القوى العاملة والتنبؤ بالمخاطر، وربط المبادرات بأهداف العمل. اشرح المعادلة وطريقة الحساب لكل مؤشر، واقترح كيفية عرضه في لوحة معلومات والإجراء المترتب.${COMMON}` },
+  { id:"docs", name:"كاتب الوثائق والمراسلات", role:"الخطابات والشهادات والتعاميم", accent:"#9C4A5E", icon:IconDoc,
+    intro:"أصيغ الخطابات الرسمية وشهادات الخبرة وخطابات التعريف والتعاميم والمذكرات بلغة عربية إدارية رصينة وبالشكل الرسمي المعتمد.",
+    suggestions:["اكتب شهادة خبرة لموظف بمسمى أخصائي موارد بشرية","صِغ تعميمًا داخليًا بمواعيد الدوام في رمضان","اكتب خطاب تعريف بالراتب موجهًا لجهة تمويلية"],
+    system:`أنت "كاتب الوثائق والمراسلات الإدارية" ضمن فريق وكلاء الموارد البشرية. تصيغ الخطابات الرسمية وشهادات الخبرة وخطابات التعريف والتعاميم والمذكرات ونماذج الموافقات بلغة عربية إدارية رصينة. التزم بالشكل الرسمي: التاريخ، المرجع، التحية، الموضوع، المتن، الخاتمة، والتوقيع "فريق إدارة الموارد البشرية" دون ذكر اسم الشركة. اترك الحقول المتغيرة بين قوسين معكوفين ليكملها عاطف.${COMMON}` },
+];
+
+/* ============================ Markdown ============================ */
+function inline(text){
+  const parts=[]; const regex=/(\*\*([^*]+)\*\*|`([^`]+)`)/g; let last=0,m,key=0;
+  while((m=regex.exec(text))!==null){
+    if(m.index>last) parts.push(text.slice(last,m.index));
+    if(m[2]!==undefined) parts.push(<strong key={key++}>{m[2]}</strong>);
+    else if(m[3]!==undefined) parts.push(<code key={key++} style={{background:"#EEF1EF",borderRadius:4,padding:"1px 5px",fontSize:".92em"}}>{m[3]}</code>);
+    last=m.index+m[0].length;
+  }
+  if(last<text.length) parts.push(text.slice(last));
+  return parts;
+}
+function renderRich(text){
+  const lines=text.split("\n"); const out=[];
+  lines.forEach((line,i)=>{
+    if(line.trim()===""){ out.push(<div key={i} style={{height:7}}/>); return; }
+    if(/^\s*\|.*\|\s*$/.test(line) && /\|/.test(line)){
+      if(/^[\s|:-]+$/.test(line)) return;
+      const cells=line.split("|").map(c=>c.trim()).filter((c,idx,a)=>!(idx===0&&c==="")&&!(idx===a.length-1&&c===""));
+      out.push(<div key={i} style={{display:"flex",gap:1,background:T.border,borderRadius:6,overflow:"hidden",margin:"2px 0"}}>{cells.map((c,j)=><div key={j} style={{flex:1,background:"#fff",padding:"6px 9px",fontSize:13.5,lineHeight:1.6}}>{inline(c)}</div>)}</div>);
+      return;
+    }
+    const h=line.match(/^(#{1,4})\s+(.*)$/);
+    if(h){ out.push(<div key={i} style={{fontWeight:700,fontSize:15.5,margin:"9px 0 3px",color:T.ink}}>{inline(h[2])}</div>); return; }
+    const b=line.match(/^\s*[-*]\s+(.*)$/);
+    if(b){ out.push(<div key={i} style={{display:"flex",gap:8,margin:"3px 0"}}><span style={{color:T.muted,lineHeight:"1.85em"}}>•</span><span style={{flex:1,lineHeight:1.85}}>{inline(b[1])}</span></div>); return; }
+    const n=line.match(/^\s*(\d+)\.\s+(.*)$/);
+    if(n){ out.push(<div key={i} style={{display:"flex",gap:8,margin:"3px 0"}}><span style={{fontWeight:700,color:T.ink}}>{n[1]}.</span><span style={{flex:1,lineHeight:1.85}}>{inline(n[2])}</span></div>); return; }
+    out.push(<div key={i} style={{margin:"3px 0",lineHeight:1.85}}>{inline(line)}</div>);
+  });
+  return out;
+}
+
+/* ============================ Files & API ============================ */
+const IMG=["png","jpg","jpeg","gif","webp"];
+const toBase64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
+const toText=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=rej;r.readAsText(file);});
+async function pdfToText(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await window.pdfjsLib.getDocument({data:buf}).promise;
+  let out="";
+  for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();out+=tc.items.map(it=>it.str).join(" ")+"\n";}
+  return out.trim();
+}
+async function docxToText(file){
+  const buf=await file.arrayBuffer();
+  const r=await window.mammoth.extractRawText({arrayBuffer:buf});
+  return (r.value||"").trim();
+}
+async function extractText(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(ext==="pdf") return await pdfToText(file);
+  if(ext==="docx") return await docxToText(file);
+  return await toText(file);
+}
+async function fileToBlock(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(IMG.includes(ext)){
+    const data=await toBase64(file);
+    const media_type=file.type||("image/"+(ext==="jpg"?"jpeg":ext));
+    return {type:"image",source:{type:"base64",media_type,data}};
+  }
+  const text=await extractText(file);
+  return {type:"text",text:`\n\n[ملف مرفق: ${file.name}]\n${text}`};
+}
+
+function getConfig(){
+  return {
+    worker:(localStorage.getItem("hra_worker")||"").trim(),
+    token:(localStorage.getItem("hra_token")||"").trim(),
+    key:(localStorage.getItem("hra_key")||"").trim(),
+    model:(localStorage.getItem("hra_model")||"claude-sonnet-4-6").trim(),
+  };
+}
+function sanitize(messages){
+  return messages.map(m=>{
+    if(Array.isArray(m.content)){
+      const c=m.content.filter(b=>!((b.type==="image"||b.type==="document")&&(!b.source||!b.source.data)));
+      return {role:m.role,content:c.length?c:[{type:"text",text:"(مرفق غير متاح)"}]};
+    }
+    return {role:m.role,content:m.content};
+  });
+}
+async function callAI(system,messages){
+  const cfg=getConfig();
+  const payload={model:cfg.model,max_tokens:4096,system,messages:sanitize(messages)};
+  let res;
+  if(cfg.worker){
+    const headers={"content-type":"application/json"};
+    if(cfg.token) headers["x-app-token"]=cfg.token;
+    res=await fetch(cfg.worker,{method:"POST",headers,body:JSON.stringify(payload)});
+  } else if(cfg.key){
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(payload)});
+  } else {
+    throw new Error("NO_CONFIG");
+  }
+  if(!res.ok){ const t=await res.text().catch(()=> ""); throw new Error("HTTP "+res.status+(t?(": "+t.slice(0,180)):"")); }
+  const data=await res.json();
+  const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+  return text||"تعذّر توليد رد.";
+}
+function errMsg(e){
+  if(e&&e.message==="NO_CONFIG") return "لم يتم إعداد الاتصال بالذكاء الاصطناعي. افتح الإعدادات وأضف رابط الخادم (Worker) أو مفتاح الـ API.";
+  return "تعذّر الوصول إلى الوكيل: "+(e&&e.message?e.message:"خطأ غير معروف");
+}
+
+/* ============================ Settings ============================ */
+function Settings({onClose}){
+  const [worker,setWorker]=useState(localStorage.getItem("hra_worker")||"");
+  const [token,setToken]=useState(localStorage.getItem("hra_token")||"");
+  const [key,setKey]=useState(localStorage.getItem("hra_key")||"");
+  const [model,setModel]=useState(localStorage.getItem("hra_model")||"claude-sonnet-4-6");
+  const save=()=>{
+    localStorage.setItem("hra_worker",worker.trim());
+    localStorage.setItem("hra_token",token.trim());
+    localStorage.setItem("hra_key",key.trim());
+    localStorage.setItem("hra_model",model.trim()||"claude-sonnet-4-6");
+    onClose(true);
+  };
+  const fld={width:"100%",border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 12px",fontSize:14,background:"#FBFCFB",color:T.ink,marginTop:6};
+  const lab={fontSize:13,fontWeight:600,color:T.ink,marginTop:16,display:"block"};
+  const hint={fontSize:11.5,color:T.muted,marginTop:3,lineHeight:1.6};
+  return (
+    <div onClick={()=>onClose(false)} style={{position:"fixed",inset:0,background:"rgba(12,20,16,.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,zIndex:50}}>
+      <div onClick={e=>e.stopPropagation()} className="hra-fade hra-scroll" style={{background:"#fff",borderRadius:18,width:"100%",maxWidth:480,maxHeight:"88vh",overflowY:"auto",padding:"22px 22px 24px",boxShadow:"0 20px 50px rgba(0,0,0,.25)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+          <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:700,fontSize:18,color:T.ink}}>إعدادات الاتصال</div>
+          <button onClick={()=>onClose(false)} aria-label="إغلاق" style={{border:"none",background:"#F1F4F2",borderRadius:9,padding:6,color:T.muted}}><IconX size={18}/></button>
+        </div>
+        <div style={{fontSize:12.5,color:T.muted,lineHeight:1.7}}>الطريقة المفضّلة هي وسيط Cloudflare Worker لأنه يخفي المفتاح. وضع المفتاح المباشر مناسب للاستخدام الشخصي فقط.</div>
+
+        <label style={lab}>رابط الخادم الوسيط (Cloudflare Worker)</label>
+        <input style={fld} value={worker} onChange={e=>setWorker(e.target.value)} placeholder="https://hr-agents-proxy.you.workers.dev" dir="ltr"/>
+        <div style={hint}>الخيار الموصى به للنشر العام. اتركه فارغًا لاستخدام المفتاح المباشر.</div>
+
+        <label style={lab}>رمز التطبيق (اختياري)</label>
+        <input style={fld} value={token} onChange={e=>setToken(e.target.value)} placeholder="x-app-token" dir="ltr"/>
+        <div style={hint}>إن فعّلت APP_TOKEN في الخادم، أدخل القيمة نفسها هنا.</div>
+
+        <label style={lab}>مفتاح Anthropic API (وضع مباشر)</label>
+        <input style={fld} type="password" value={key} onChange={e=>setKey(e.target.value)} placeholder="sk-ant-..." dir="ltr"/>
+        <div style={hint}>يُحفظ محليًا في متصفحك فقط. لا تستخدمه في نسخة منشورة للعموم.</div>
+
+        <label style={lab}>اسم النموذج</label>
+        <input style={fld} value={model} onChange={e=>setModel(e.target.value)} placeholder="claude-sonnet-4-6" dir="ltr"/>
+        <div style={hint}>غيّره إلى أي نموذج معتمد لديك إن لزم.</div>
+
+        <button onClick={save} style={{marginTop:22,width:"100%",border:"none",background:"#1A6B52",color:"#fff",borderRadius:12,padding:"12px",fontSize:15,fontWeight:700}}>حفظ</button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================ App ============================ */
+function App(){
+  const [activeId,setActiveId]=useState(AGENTS[0].id);
+  const [conversations,setConversations]=useState({});
+  const [input,setInput]=useState("");
+  const [pending,setPending]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState(null);
+  const [isMobile,setIsMobile]=useState(false);
+  const [showSettings,setShowSettings]=useState(false);
+  const [cfgVersion,setCfgVersion]=useState(0);
+
+  const [jobDesc,setJobDesc]=useState("");
+  const [cvFiles,setCvFiles]=useState([]);
+  const [dragOver,setDragOver]=useState(false);
+
+  const endRef=useRef(null), taRef=useRef(null), fileRef=useRef(null), cvRef=useRef(null);
+  const agent=AGENTS.find(a=>a.id===activeId);
+  const msgs=conversations[activeId]||[];
+  const cfg=getConfig();
+  const configured=!!(cfg.worker||cfg.key);
+
+  useEffect(()=>{ const onR=()=>setIsMobile(window.innerWidth<860); onR(); window.addEventListener("resize",onR); return ()=>window.removeEventListener("resize",onR); },[]);
+  useEffect(()=>{ try{const raw=localStorage.getItem("hra_convos"); if(raw) setConversations(JSON.parse(raw));}catch(e){} if(!getConfig().worker&&!getConfig().key) setShowSettings(true); },[]);
+  useEffect(()=>{ endRef.current&&endRef.current.scrollIntoView({behavior:"smooth"}); },[conversations,loading,activeId]);
+  useEffect(()=>{
+    try{
+      const trimmed={};
+      for(const k in conversations){ trimmed[k]=conversations[k].map(m=>Array.isArray(m.content)?{...m,content:m.content.map(b=>(b.type==="image"||b.type==="document")?{...b,source:{...b.source,data:""}}:b)}:m); }
+      localStorage.setItem("hra_convos",JSON.stringify(trimmed));
+    }catch(e){}
+  },[conversations]);
+
+  const resetTa=()=>{ if(taRef.current) taRef.current.style.height="46px"; };
+  const switchAgent=id=>{ setActiveId(id); setPending([]); setInput(""); setError(null); resetTa(); };
+
+  async function handleSend(overrideText){
+    const text=(overrideText??input).trim();
+    if((!text&&pending.length===0)||loading) return;
+    setLoading(true); setError(null);
+    const atts=pending.map(f=>f.name);
+    let content;
+    try{
+      if(pending.length){
+        const blocks=[]; for(const f of pending){ blocks.push(await fileToBlock(f)); }
+        content=[{type:"text",text:text||"حلّل المرفقات التالية."},...blocks];
+      } else { content=text; }
+    }catch(e){ setError("تعذّرت قراءة أحد المرفقات."); setLoading(false); return; }
+    const userMsg={id:uid(),role:"user",content,display:text,atts};
+    const hist=conversations[activeId]||[]; const next=[...hist,userMsg];
+    setConversations(p=>({...p,[activeId]:next}));
+    setInput(""); setPending([]); resetTa();
+    try{
+      const reply=await callAI(agent.system,next);
+      setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
+    }catch(e){ setError(errMsg(e)); }
+    finally{ setLoading(false); }
+  }
+
+  async function addCvs(fileList){
+    const arr=Array.from(fileList||[]);
+    for(const f of arr){
+      const id=uid();
+      setCvFiles(p=>[...p,{id,name:f.name,text:"",status:"reading"}]);
+      try{ const t=await extractText(f); setCvFiles(p=>p.map(c=>c.id===id?{...c,text:t,status:t?"done":"error"}:c)); }
+      catch(e){ setCvFiles(p=>p.map(c=>c.id===id?{...c,status:"error"}:c)); }
+    }
+  }
+  async function runScreen(){
+    const ready=cvFiles.filter(c=>c.status==="done"&&c.text);
+    if(ready.length===0||loading) return;
+    setLoading(true); setError(null);
+    let txt=`الوصف الوظيفي:\n${jobDesc.trim()||"(لم يُحدد وصف وظيفي. استخرج معايير التقييم من السير نفسها واذكر ذلك.)"}\n\nعدد المرشحين: ${ready.length}\n`;
+    ready.forEach((c,i)=>{ txt+=`\n===== المرشح ${i+1}: ${c.name} =====\n${c.text}\n`; });
+    txt+=`\n\nالمطلوب: اقرأ السير وفاضل بين المرشحين بموضوعية وعدالة. لكل مرشح: درجة من 100، نقاط القوة، الفجوات، توصية. ثم جدول مقارنة وترتيب تنازلي، واختم بالتوصية النهائية بأفضل المرشحين مع المبرر.`;
+    const userMsg={id:uid(),role:"user",content:txt,display:`مفاضلة ${ready.length} مرشحين${jobDesc.trim()?" حسب الوصف الوظيفي":""}`,atts:ready.map(c=>c.name)};
+    const next=[userMsg];
+    setConversations(p=>({...p,[activeId]:next}));
+    try{
+      const reply=await callAI(agent.system,next);
+      setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
+    }catch(e){ setError(errMsg(e)); }
+    finally{ setLoading(false); }
+  }
+  const resetCv=()=>{ setConversations(p=>({...p,[activeId]:[]})); setCvFiles([]); setJobDesc(""); setError(null); };
+  const newChat=()=>{ if(agent.intake) resetCv(); else { setConversations(p=>({...p,[activeId]:[]})); setError(null); } };
+
+  const onInput=e=>{ setInput(e.target.value); const el=taRef.current; if(el){ el.style.height="auto"; el.style.height=Math.min(el.scrollHeight,150)+"px"; } };
+  const onKeyDown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); handleSend(); } };
+
+  /* ---------- pieces ---------- */
+  const brand=(
+    <div style={{padding:isMobile?"14px 16px 12px":"22px 20px 18px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:800,fontSize:isMobile?18:21,color:T.sideText,letterSpacing:".2px"}}>وكلاء الموارد البشرية</div>
+          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو</div>
+        </div>
+        <button onClick={()=>setShowSettings(true)} aria-label="الإعدادات" style={{border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)",color:T.sideText,borderRadius:10,padding:8}}><IconGear size={18}/></button>
+      </div>
+      {!isMobile&&<div style={{marginTop:8,fontSize:12,color:T.sideMuted,lineHeight:1.7}}>سبعة وكلاء متخصصين. ارفع المرفقات لأي وكيل.</div>}
+    </div>
+  );
+
+  const agentList=AGENTS.map(a=>{
+    const on=a.id===activeId; const Ic=a.icon;
+    return (
+      <button key={a.id} onClick={()=>switchAgent(a.id)} aria-pressed={on}
+        style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"right",border:"none",borderRadius:12,padding:"10px 12px",marginBottom:4,background:on?hexToRgba(a.accent,.18):"transparent",boxShadow:on?`inset 2px 0 0 ${a.accent}`:"none"}}>
+        <Seal Icon={Ic} accent={a.accent} size={36}/>
+        <span style={{flex:1,minWidth:0}}>
+          <span style={{display:"block",fontWeight:600,fontSize:14,color:T.sideText}}>{a.name}</span>
+          <span style={{display:"block",fontSize:11.5,color:T.sideMuted,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.role}</span>
+        </span>
+      </button>
+    );
+  });
+
+  const chips=(
+    <div className="hra-scroll" style={{display:"flex",gap:8,overflowX:"auto",padding:"10px 14px",background:T.sidebar}}>
+      {AGENTS.map(a=>{ const on=a.id===activeId; const Ic=a.icon; return (
+        <button key={a.id} onClick={()=>switchAgent(a.id)} style={{display:"flex",alignItems:"center",gap:7,flexShrink:0,border:`1px solid ${on?a.accent:"rgba(255,255,255,.12)"}`,background:on?hexToRgba(a.accent,.22):"rgba(255,255,255,.04)",borderRadius:999,padding:"6px 12px 6px 10px"}}>
+          <Ic size={15} color={a.accent}/><span style={{fontSize:12.5,fontWeight:600,color:T.sideText,whiteSpace:"nowrap"}}>{a.name}</span>
+        </button>
+      ); })}
+    </div>
+  );
+
+  const attChips=(names,dark)=> names&&names.length>0 ? (
+    <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+      {names.map((n,i)=>(
+        <span key={i} style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:11.5,borderRadius:7,padding:"3px 8px",background:dark?"rgba(255,255,255,.12)":"#EEF2F0",color:dark?"#E9EDEA":T.muted,maxWidth:200}}>
+          <IconUpload size={12} color={dark?"#E9EDEA":T.muted}/>
+          <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n}</span>
+        </span>
+      ))}
+    </div>
+  ) : null;
+
+  const thread=(
+    <div style={{maxWidth:840,margin:"0 auto",width:"100%"}}>
+      {msgs.map(m=>{
+        const user=m.role==="user";
+        return (
+          <div key={m.id} className="hra-fade" style={{display:"flex",justifyContent:user?"flex-start":"flex-end",marginBottom:16}}>
+            <div style={{maxWidth:"86%"}}>
+              <div style={{fontSize:11.5,fontWeight:600,color:user?T.muted:agent.accent,marginBottom:5,paddingInline:4}}>{user?"عاطف":agent.name}</div>
+              <div style={{borderRadius:16,padding:"12px 15px",fontSize:14.5,background:user?T.user:T.surface,color:user?"#F2F5F3":T.ink,border:user?"none":`1px solid ${T.border}`,boxShadow:user?"none":"0 1px 2px rgba(20,30,25,.05)",...(user?{borderTopRightRadius:6}:{borderTopLeftRadius:6,borderInlineStart:`3px solid ${hexToRgba(agent.accent,.5)}`})}}>
+                {user?<div style={{whiteSpace:"pre-wrap",lineHeight:1.8}}>{m.display}</div>:renderRich(m.content)}
+                {user&&attChips(m.atts,true)}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {loading&&(
+        <div className="hra-fade" style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:9,background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,padding:"11px 15px",color:T.muted,fontSize:13.5}}>
+            <span className="hra-spin" style={{display:"inline-flex"}}><IconSpinner size={16} color={agent.accent}/></span>
+            {agent.intake?"يقرأ ويفاضل...":"يكتب الآن..."}
+          </div>
+        </div>
+      )}
+      <div ref={endRef}/>
+    </div>
+  );
+
+  const empty=(
+    <div className="hra-fade" style={{maxWidth:620,margin:"auto",textAlign:"center",padding:"24px 8px"}}>
+      <div style={{display:"flex",justifyContent:"center",marginBottom:14}}><Seal Icon={agent.icon} accent={agent.accent} size={64}/></div>
+      <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:700,fontSize:22,color:T.ink,marginBottom:8}}>{agent.name}</div>
+      <div style={{color:T.muted,fontSize:14.5,lineHeight:1.85,marginBottom:22}}>{agent.intro}</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:9,justifyContent:"center"}}>
+        {agent.suggestions.map((s,i)=>(
+          <button key={i} onClick={()=>handleSend(s)} style={{border:`1px solid ${hexToRgba(agent.accent,.4)}`,background:hexToRgba(agent.accent,.07),color:T.ink,borderRadius:999,padding:"9px 15px",fontSize:13.5,fontWeight:500,lineHeight:1.5}}>{s}</button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const cvReady=cvFiles.filter(c=>c.status==="done").length;
+  const intake=(
+    <div className="hra-fade" style={{maxWidth:760,margin:"0 auto",width:"100%"}}>
+      <div style={{textAlign:"center",marginBottom:18}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Seal Icon={agent.icon} accent={agent.accent} size={60}/></div>
+        <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:700,fontSize:21,color:T.ink}}>{agent.name}</div>
+        <div style={{color:T.muted,fontSize:14,lineHeight:1.8,marginTop:6,maxWidth:560,marginInline:"auto"}}>{agent.intro}</div>
+      </div>
+      <label style={{fontSize:13,fontWeight:600,color:T.ink}}>الوصف الوظيفي (اختياري، يحسّن دقة المفاضلة)</label>
+      <textarea value={jobDesc} onChange={e=>setJobDesc(e.target.value)} placeholder="الصق هنا الوصف الوظيفي والمتطلبات والمؤهلات..." style={{width:"100%",marginTop:6,minHeight:88,resize:"vertical",border:`1px solid ${T.border}`,borderRadius:12,padding:"11px 13px",fontSize:14,lineHeight:1.7,background:"#FBFCFB",color:T.ink}}/>
+      <div onClick={()=>cvRef.current&&cvRef.current.click()} onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);addCvs(e.dataTransfer.files);}}
+        style={{marginTop:14,border:`1.5px dashed ${dragOver?agent.accent:T.border}`,background:dragOver?hexToRgba(agent.accent,.06):"#FBFCFB",borderRadius:14,padding:"24px 16px",textAlign:"center",cursor:"pointer"}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:8}}><IconUpload size={26} color={agent.accent}/></div>
+        <div style={{fontSize:14,color:T.ink,fontWeight:600}}>اسحب وأفلت السير الذاتية هنا أو اضغط للاختيار</div>
+        <div style={{fontSize:12,color:T.muted,marginTop:4}}>يدعم PDF و DOCX و TXT · يمكن إضافة عدة ملفات</div>
+        <input ref={cvRef} type="file" multiple accept=".pdf,.docx,.txt,.md" style={{display:"none"}} onChange={e=>{addCvs(e.target.files);e.target.value="";}}/>
+      </div>
+      {cvFiles.length>0&&(
+        <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:7}}>
+          {cvFiles.map(c=>(
+            <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,border:`1px solid ${T.border}`,borderRadius:10,padding:"9px 11px",background:"#fff"}}>
+              <IconDoc size={17} color={agent.accent}/>
+              <span style={{flex:1,minWidth:0,fontSize:13.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</span>
+              {c.status==="reading"&&<span className="hra-spin" style={{display:"inline-flex"}}><IconSpinner size={15} color={T.muted}/></span>}
+              {c.status==="done"&&<IconCheck size={16} color="#1A6B52"/>}
+              {c.status==="error"&&<span style={{fontSize:11.5,color:"#9B2C2C"}}>تعذّرت القراءة</span>}
+              <button onClick={()=>setCvFiles(p=>p.filter(x=>x.id!==c.id))} aria-label="حذف" style={{border:"none",background:"transparent",color:T.muted,padding:2}}><IconX size={16}/></button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button onClick={runScreen} disabled={loading||cvReady===0} style={{marginTop:16,width:"100%",border:"none",borderRadius:12,padding:"13px",fontSize:15,fontWeight:700,color:"#fff",background:(loading||cvReady===0)?"#C3CCC7":agent.accent}}>
+        {loading?"جارٍ التحليل...":(cvReady>1?`حلّل وفاضل ${cvReady} مرشحين`:cvReady===1?"حلّل المرشح":"أضف سيرة واحدة على الأقل")}
+      </button>
+    </div>
+  );
+
+  const composer=(
+    <div style={{borderTop:`1px solid ${T.border}`,background:T.surface,padding:isMobile?"10px 12px":"12px 18px"}}>
+      {error&&<div style={{maxWidth:840,margin:"0 auto 9px",background:"#FCEDED",color:"#9B2C2C",border:"1px solid #F3C9C9",borderRadius:10,padding:"8px 12px",fontSize:13}}>{error}</div>}
+      {pending.length>0&&(
+        <div style={{maxWidth:840,margin:"0 auto 8px",display:"flex",flexWrap:"wrap",gap:7}}>
+          {pending.map((f,i)=>(
+            <span key={i} style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,background:"#EEF2F0",color:T.muted,borderRadius:8,padding:"5px 9px",maxWidth:220}}>
+              <IconDoc size={13} color={agent.accent}/>
+              <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.name}</span>
+              <button onClick={()=>setPending(p=>p.filter((_,j)=>j!==i))} aria-label="إزالة" style={{border:"none",background:"transparent",color:T.muted,padding:0,display:"inline-flex"}}><IconX size={13}/></button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div style={{maxWidth:840,margin:"0 auto",display:"flex",alignItems:"flex-end",gap:9}}>
+        <button onClick={()=>fileRef.current&&fileRef.current.click()} aria-label="إرفاق ملف" title="إرفاق ملف" style={{height:46,width:46,flexShrink:0,borderRadius:14,border:`1px solid ${T.border}`,background:"#fff",color:T.muted,display:"flex",alignItems:"center",justifyContent:"center"}}><IconUpload size={19}/></button>
+        <input ref={fileRef} type="file" multiple accept="image/*,.pdf,.docx,.txt,.md,.csv" style={{display:"none"}} onChange={e=>{setPending(p=>[...p,...Array.from(e.target.files||[])]);e.target.value="";}}/>
+        <textarea ref={taRef} value={input} onChange={onInput} onKeyDown={onKeyDown} rows={1} placeholder={`اكتب رسالتك إلى ${agent.name}...`} aria-label="مربع الرسالة"
+          style={{flex:1,resize:"none",height:46,maxHeight:150,border:`1px solid ${T.border}`,borderRadius:14,padding:"12px 14px",fontSize:14.5,lineHeight:1.7,color:T.ink,background:"#FBFCFB",outline:"none"}}/>
+        <button onClick={()=>handleSend()} disabled={loading||(!input.trim()&&pending.length===0)} aria-label="إرسال"
+          style={{height:46,width:46,flexShrink:0,borderRadius:14,border:"none",background:(loading||(!input.trim()&&pending.length===0))?"#C3CCC7":agent.accent,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {loading?<span className="hra-spin" style={{display:"inline-flex"}}><IconSpinner size={19} color="#fff"/></span>:<IconSend size={19}/>}
+        </button>
+      </div>
+    </div>
+  );
+
+  const header=(big)=> (
+    <div style={{display:"flex",alignItems:"center",gap:big?12:9,padding:big?"13px 18px":"10px 14px",background:T.surface,borderBottom:`1px solid ${T.border}`}}>
+      <Seal Icon={agent.icon} accent={agent.accent} size={big?40:32}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:700,fontSize:big?15.5:14,color:T.ink,fontFamily:"'Tajawal',sans-serif"}}>{agent.name}</div>
+        {big&&<div style={{fontSize:12,color:T.muted,marginTop:1}}>{agent.role}</div>}
+      </div>
+      <button onClick={newChat} style={{display:"flex",alignItems:"center",gap:6,border:`1px solid ${T.border}`,background:"#fff",color:T.muted,borderRadius:10,padding:big?"7px 12px":"6px 9px",fontSize:12.5,fontWeight:600}}>
+        <IconPlus size={15}/> {agent.intake?"مفاضلة جديدة":"محادثة جديدة"}
+      </button>
+    </div>
+  );
+
+  const showIntake = agent.intake && msgs.length===0 && !loading;
+  const showEmpty = !agent.intake && msgs.length===0 && !loading;
+
+  return (
+    <div dir="rtl" style={{height:"100vh",width:"100%",display:"flex",flexDirection:isMobile?"column":"row",background:T.bg,color:T.ink,overflow:"hidden"}}>
+      {!configured&&(
+        <div style={{position:"absolute",top:0,insetInline:0,zIndex:40,background:T.brass,color:"#1B1206",fontSize:13,textAlign:"center",padding:"7px 12px"}}>
+          لم يُضبط الاتصال بعد. <button onClick={()=>setShowSettings(true)} style={{border:"none",background:"rgba(0,0,0,.12)",color:"#1B1206",borderRadius:7,padding:"2px 10px",fontWeight:700,marginInlineStart:6}}>افتح الإعدادات</button>
+        </div>
+      )}
+
+      {isMobile?(
+        <div style={{background:T.sidebar}}>{brand}{chips}</div>
+      ):(
+        <aside style={{width:308,flexShrink:0,background:T.sidebar,display:"flex",flexDirection:"column",borderInlineStart:`4px solid ${T.brass}`}}>
+          {brand}
+          <div style={{height:1,background:"rgba(255,255,255,.07)",margin:"0 16px 10px"}}/>
+          <div className="hra-scroll" style={{flex:1,overflowY:"auto",padding:"0 12px"}}>{agentList}</div>
+          <div style={{padding:"12px 18px",fontSize:11,color:T.sideMuted,borderTop:"1px solid rgba(255,255,255,.07)",lineHeight:1.7}}>مدعوم بالذكاء الاصطناعي · كل وكيل محمّل بنظام العمل السعودي</div>
+        </aside>
+      )}
+
+      <main style={{flex:1,display:"flex",flexDirection:"column",minWidth:0,minHeight:0}}>
+        {header(!isMobile)}
+        <div className="hra-scroll" style={{flex:1,overflowY:"auto",padding:isMobile?"16px 12px":"22px 18px",display:"flex",flexDirection:"column"}}>
+          {showIntake?<div style={{margin:"auto",width:"100%"}}>{intake}</div>:showEmpty?<div style={{margin:"auto",width:"100%"}}>{empty}</div>:thread}
+        </div>
+        {(!showIntake)&&composer}
+        {showIntake&&error&&<div style={{padding:"0 16px 12px"}}><div style={{maxWidth:760,margin:"0 auto",background:"#FCEDED",color:"#9B2C2C",border:"1px solid #F3C9C9",borderRadius:10,padding:"8px 12px",fontSize:13}}>{error}</div></div>}
+      </main>
+
+      {showSettings&&<Settings onClose={()=>{ setShowSettings(false); setError(null); setCfgVersion(v=>v+1); }}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
