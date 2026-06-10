@@ -34,9 +34,19 @@ export default {
     if (request.method !== "POST") {
       return json({ error: "POST only" }, 405);
     }
-    // رمز التطبيق الاختياري
-    if (env.APP_TOKEN && request.headers.get("x-app-token") !== env.APP_TOKEN) {
-      return json({ error: "unauthorized" }, 401);
+    // قفل الوصول على نطاق الموقع فقط:
+    // يسمح لأي جهاز يفتح موقعك (المتصفح يرسل ترويسة Origin تلقائيًا)،
+    // ويمنع الاستخدام من نطاقات أخرى أو من أدوات لا ترسل Origin صحيحًا.
+    const ALLOWED_ORIGINS = [
+      "https://atif-alamodi.github.io",
+    ];
+    const origin = request.headers.get("Origin") || "";
+    const referer = request.headers.get("Referer") || "";
+    const originOk = ALLOWED_ORIGINS.some(
+      (a) => origin === a || referer.indexOf(a + "/") === 0
+    );
+    if (!originOk) {
+      return json({ error: "forbidden: origin not allowed" }, 403);
     }
     if (!env.ANTHROPIC_API_KEY) {
       return json({ error: "server missing ANTHROPIC_API_KEY" }, 500);

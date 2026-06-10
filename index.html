@@ -217,7 +217,7 @@ async function fileToBlock(file){
 
 function getConfig(){
   return {
-    worker:(localStorage.getItem("hra_worker")||"").trim(),
+    worker:(localStorage.getItem("hra_worker")||"https://hr-agents-proxy.atif-alamodi.workers.dev").trim(),
     token:(localStorage.getItem("hra_token")||"").trim(),
     key:(localStorage.getItem("hra_key")||"").trim(),
     model:(localStorage.getItem("hra_model")||"claude-sonnet-4-6").trim(),
@@ -257,7 +257,7 @@ function errMsg(e){
 
 /* ============================ Settings ============================ */
 function Settings({onClose}){
-  const [worker,setWorker]=useState(localStorage.getItem("hra_worker")||"");
+  const [worker,setWorker]=useState(localStorage.getItem("hra_worker")||"https://hr-agents-proxy.atif-alamodi.workers.dev");
   const [token,setToken]=useState(localStorage.getItem("hra_token")||"");
   const [key,setKey]=useState(localStorage.getItem("hra_key")||"");
   const [model,setModel]=useState(localStorage.getItem("hra_model")||"claude-sonnet-4-6");
