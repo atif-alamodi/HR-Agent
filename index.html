@@ -615,5 +615,66 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
     });
   }
 </script>
+<script>
+  /* لافتة تثبيت داخل التطبيق: زر صريح على أندرويد، وتلميح على آيفون */
+  (function () {
+    function isStandalone() {
+      return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true
+      );
+    }
+    if (isStandalone()) return;
+    var dp = null;
+    function banner(innerHTML) {
+      var b = document.createElement("div");
+      b.id = "hra-install";
+      b.dir = "rtl";
+      b.style.cssText =
+        "position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;background:#16261F;color:#E9EDEA;border:1px solid #2c4a3e;border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.32);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;display:flex;align-items:center;gap:10px;justify-content:space-between;font-size:14px";
+      b.innerHTML = innerHTML;
+      document.body.appendChild(b);
+      return b;
+    }
+    function closeBtn(b) {
+      var c = document.createElement("button");
+      c.textContent = "\u2715";
+      c.style.cssText =
+        "background:transparent;color:#90A39A;border:none;font-size:16px;padding:4px 8px;cursor:pointer";
+      c.onclick = function () { b.remove(); };
+      return c;
+    }
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault();
+      dp = e;
+      if (document.getElementById("hra-install")) return;
+      var b = banner('<span style="flex:1">ثبّت تطبيق وكلاء الموارد البشرية على جهازك</span>');
+      var btn = document.createElement("button");
+      btn.textContent = "تثبيت";
+      btn.style.cssText =
+        "background:#B7894A;color:#1B2A26;border:none;border-radius:10px;padding:9px 18px;font-weight:700;font-size:14px;cursor:pointer";
+      btn.onclick = function () {
+        if (!dp) return;
+        dp.prompt();
+        dp.userChoice.finally(function () { dp = null; b.remove(); });
+      };
+      b.appendChild(btn);
+      b.appendChild(closeBtn(b));
+    });
+    window.addEventListener("appinstalled", function () {
+      var el = document.getElementById("hra-install");
+      if (el) el.remove();
+    });
+    var ua = navigator.userAgent || "";
+    var isIOS = /iphone|ipad|ipod/i.test(ua);
+    if (isIOS) {
+      setTimeout(function () {
+        if (document.getElementById("hra-install")) return;
+        var b = banner('<span style="flex:1;line-height:1.7">للتثبيت على آيفون: افتح في Safari، اضغط زر المشاركة، ثم \u201cإضافة إلى الشاشة الرئيسية\u201d</span>');
+        b.appendChild(closeBtn(b));
+      }, 1500);
+    }
+  })();
+</script>
 </body>
 </html>
