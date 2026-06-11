@@ -1,8 +1,8 @@
 /*
  * وسيط Cloudflare Worker لفريق وكلاء الموارد البشرية
- * يستخدم Cloudflare Workers AI المجاني (لا مفتاح خارجي ولا فوترة).
- * الحصة المجانية: 10,000 وحدة (Neurons) يوميًا، تُعاد ضبطها 00:00 UTC.
- * النشر: wrangler deploy  (يتطلب ربط [ai] باسم AI في wrangler.toml)
+ * Cloudflare Workers AI المجاني. نموذج سريع لتقليل زمن الاستجابة.
+ * الحصة المجانية: 10,000 وحدة/يوم، تتجدد 00:00 UTC.
+ * النشر: wrangler deploy  (يتطلب ربط [ai] باسم AI)
  */
 
 const CORS = {
@@ -11,7 +11,6 @@ const CORS = {
   "Access-Control-Allow-Headers": "content-type, x-app-token",
   "Access-Control-Max-Age": "86400",
 };
-
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
@@ -19,11 +18,10 @@ function json(obj, status = 200) {
   });
 }
 
-// النموذج: Qwen3 (دعم عربي قوي، بنية MoE اقتصادية)
-const MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+// نموذج سريع (8B) لخفض زمن الاستجابة مع عربية مقبولة
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const ALLOWED_ORIGINS = ["https://atif-alamodi.github.io"];
 
-// تحويل محتوى الرسالة (نص أو كتل) إلى نص عادي
 function flatten(content) {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
@@ -41,7 +39,6 @@ function flatten(content) {
   return "";
 }
 
-// استخراج النص من أي شكل رد (OpenAI choices / response / result)
 function extractText(out) {
   if (!out) return "";
   if (typeof out === "string") return out;
@@ -60,26 +57,17 @@ function extractText(out) {
 
 export default {
   async fetch(request, env) {
-    if (request.method === "OPTIONS") {
+    if (request.method === "OPTIONS")
       return new Response(null, { status: 204, headers: CORS });
-    }
-    if (request.method !== "POST") {
-      return json({ error: "POST only" }, 405);
-    }
+    if (request.method !== "POST") return json({ error: "POST only" }, 405);
 
-    // قفل النطاق
     const origin = request.headers.get("Origin") || "";
     const referer = request.headers.get("Referer") || "";
     const originOk = ALLOWED_ORIGINS.some(
       (a) => origin === a || referer.indexOf(a + "/") === 0
     );
-    if (!originOk) {
-      return json({ error: "forbidden: origin not allowed" }, 403);
-    }
-
-    if (!env.AI) {
-      return json({ error: "server missing AI binding" }, 500);
-    }
+    if (!originOk) return json({ error: "forbidden: origin not allowed" }, 403);
+    if (!env.AI) return json({ error: "server missing AI binding" }, 500);
 
     let body;
     try {
@@ -88,30 +76,27 @@ export default {
       return json({ error: "invalid json" }, 400);
     }
 
-    // بناء الرسائل. نُلحق /no_think لتعطيل وضع التفكير في Qwen3 (توفير رموز وسرعة)
     const sys = (body.system || "").toString();
     const inMsgs = Array.isArray(body.messages) ? body.messages : [];
     const messages = [];
-    if (sys) messages.push({ role: "system", content: sys + "\n/no_think" });
+    // تعطيل التفكير فقط لنماذج Qwen
+    const noThink = MODEL.indexOf("qwen") !== -1 ? "\n/no_think" : "";
+    if (sys) messages.push({ role: "system", content: sys + noThink });
     for (const m of inMsgs) {
       const role = m && m.role === "assistant" ? "assistant" : "user";
       const content = flatten(m && m.content);
       if (content) messages.push({ role, content });
     }
-    if (messages.length === 0) {
-      return json({ error: "no messages" }, 400);
-    }
+    if (messages.length === 0) return json({ error: "no messages" }, 400);
 
-    const max_tokens = Math.min(Number(body.max_tokens) || 2048, 2048);
+    const max_tokens = Math.min(Number(body.max_tokens) || 1024, 1024);
 
     try {
       const out = await env.AI.run(MODEL, { messages, max_tokens });
       let text = extractText(out);
       if (typeof text !== "string") text = String(text || "");
       text = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-      return json({
-        content: [{ type: "text", text: text || "تعذّر توليد رد." }],
-      });
+      return json({ content: [{ type: "text", text: text || "تعذّر توليد رد." }] });
     } catch (e) {
       return json(
         { error: "AI error: " + (e && e.message ? e.message : String(e)) },
