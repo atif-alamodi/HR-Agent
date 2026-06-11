@@ -89,7 +89,7 @@ export default {
     }
     if (messages.length === 0) return json({ error: "no messages" }, 400);
 
-    const max_tokens = Math.min(Number(body.max_tokens) || 1024, 1024);
+    const max_tokens = Math.min(Number(body.max_tokens) || 2048, 4096);
 
     try {
       const out = await env.AI.run(MODEL, { messages, max_tokens });

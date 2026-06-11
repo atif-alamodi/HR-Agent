@@ -85,6 +85,7 @@ const IconHeart = p => <Svg {...p}><path d="M12 20C12 20 4 14.8 4 9.4 4 7 5.9 5.
 const IconWallet = p => <Svg {...p}><path d="M4 8v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H5a1 1 0 0 1-1-1z"/><path d="M4 8a2 2 0 0 1 2-2h10"/><circle cx="17" cy="14" r="1.2"/></Svg>;
 const IconChart = p => <Svg {...p}><path d="M4 20h16"/><rect x="6" y="11" width="3" height="7" rx="1" fill={p.color||"currentColor"} stroke="none"/><rect x="11" y="7" width="3" height="11" rx="1" fill={p.color||"currentColor"} stroke="none"/><rect x="16" y="13" width="3" height="5" rx="1" fill={p.color||"currentColor"} stroke="none"/></Svg>;
 const IconDoc = p => <Svg {...p}><path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M8 12h7M8 16h7M8 8h3"/></Svg>;
+const IconInterview = p => <Svg {...p}><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 9.5h8M8 12.5h5"/></Svg>;
 const IconSend = p => <Svg {...p}><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></Svg>;
 const IconPlus = p => <Svg {...p}><path d="M12 5v14M5 12h14"/></Svg>;
 const IconUpload = p => <Svg {...p}><path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M5 18v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1"/></Svg>;
@@ -128,6 +129,22 @@ const GOSI_NOTE = `
 ملاحظة عن التأمينات الاجتماعية: تُحتسب على أجر الاشتراك (الأساسي + بدل السكن ضمن السقف النظامي). النسب الأساسية المعروفة للسعوديين قرابة 9.75% على الموظف ونسبة مماثلة تقريبًا على صاحب العمل، ولغير السعوديين الأخطار المهنية فقط على صاحب العمل. صدر تعديل تدريجي اعتبارًا من 2025، لذا اطلب من عاطف دائمًا التحقق من النسبة المعتمدة للسنة الحالية قبل اعتماد الرقم.
 `;
 
+const FENCE = String.fromCharCode(96,96,96);
+const CV_CONTRACT = `
+
+بعد إتمام التقرير النصي الكامل، اكتب في آخر ردك كتلة بيانات JSON صالحة تمامًا تُستخدم للرسوم البيانية، بهذا الشكل الحرفي. كل القيم الرقمية أعداد صحيحة من 0 إلى 100، بلا فواصل زائدة، وبلا أي تعليق، ولا تكتب أي نص بعد الكتلة:
+${FENCE}hrjson
+{"type":"cv","jobTitle":"المسمى الوظيفي أو نص فارغ","candidates":[{"name":"اسم المرشح","overall":0,"fit":0,"recommendation":"مرشح قوي أو مرشح محتمل أو بحاجة لتحفظ أو غير مناسب","dimensions":{"الخبرة":0,"المهارات الفنية":0,"التعليم":0,"الإنجازات":0,"الاستقرار الوظيفي":0,"ملاءمة الدور":0},"strengths":["نقطة قوة"],"weaknesses":["نقطة ضعف أو مجال تطوير"],"risks":["مخاطرة أو مؤشر تحفظ"],"interviewFocus":["محور للتركيز في المقابلة"]}]}
+${FENCE}
+اجعل مفاتيح dimensions حرفيًا كما هي أعلاه. أدرج عنصرًا واحدًا في candidates لكل مرشح. اجعل overall متسقًا مع متوسط المحاور.`;
+const INT_CONTRACT = `
+
+بعد إتمام التقرير النصي الكامل، اكتب في آخر ردك كتلة بيانات JSON صالحة تمامًا تُستخدم للرسوم البيانية، بهذا الشكل الحرفي. كل القيم الرقمية أعداد صحيحة من 0 إلى 100، بلا فواصل زائدة، وبلا أي تعليق، ولا تكتب أي نص بعد الكتلة:
+${FENCE}hrjson
+{"type":"interview","candidate":"اسم المرشح أو نص فارغ","role":"الوظيفة أو نص فارغ","overall":0,"recommendation":"يوصى بالتقدم أو واعد بتحفظ أو غير مناسب","dimensions":{"الكفاءة الفنية":0,"حل المشكلات":0,"التواصل والوضوح":0,"الملاءمة الثقافية":0,"الدافعية":0,"الأدلة والأمثلة":0},"answers":[{"q":"ملخص قصير للسؤال","score":0,"verdict":"قوية أو متوسطة أو ضعيفة"}],"strengths":["نقطة قوة"],"concerns":["موضع ضعف أو قلق"],"redFlags":["مؤشر أحمر إن وجد"],"followUps":["سؤال متابعة مقترح"]}
+${FENCE}
+اجعل مفاتيح dimensions حرفيًا كما هي أعلاه، وأدرج عنصرًا في answers لكل سؤال رئيسي حللته.`;
+
 const AGENTS = [
   { id:"law", name:"مستشار نظام العمل", role:"الامتثال والعقود والإنهاء", accent:"#2D5B8E", icon:IconScale,
     intro:"اسألني عن أي مسألة نظامية في علاقات العمل: العقود، الإنهاء، الاستقالة، الإجازات، ومكافأة نهاية الخدمة. أسند رأيي بالمواد وأوضّح المخاطر والبدائل المشروعة.",
@@ -137,10 +154,27 @@ const AGENTS = [
     intro:"أساعدك في الأوصاف الوظيفية، معايير الفرز، أسئلة المقابلات، وخطط السعودة ورفع مؤشر نطاقات. اربط مرفقًا للوصف الوظيفي أو سيرة لأبني عليها.",
     suggestions:["اكتب وصفًا وظيفيًا لمطور Backend في شركة فينتك","جهّز 8 أسئلة مقابلة سلوكية لدور أخصائي موارد بشرية","اقترح خطة لرفع نسبة السعودة في الإدارة"],
     system:`أنت "أخصائي التوظيف والاستقطاب والسعودة" ضمن فريق وكلاء الموارد البشرية. تساعد في الأوصاف الوظيفية الواقعية وغير المتحيزة، معايير الفرز، أسئلة المقابلات السلوكية والفنية مع معايير تقييم، خطط الإحلال والسعودة، وتحسين مؤشرات نطاقات. راعِ قطاع التقنية المالية، واربط توصياتك بأهداف العمل.${COMMON}` },
-  { id:"cv", name:"مفاضل السير الذاتية", role:"قراءة وفرز وترتيب المرشحين", accent:"#0E7C86", icon:IconSearchDoc, intake:true,
-    intro:"ارفع السير الذاتية (PDF أو DOCX) وأضف الوصف الوظيفي، وسأقرأها وأفاضل بين المرشحين بموضوعية مع درجات ومبررات وترتيب نهائي.",
+  { id:"cv", name:"مفاضل السير الذاتية", role:"تحليل عميق وفرز وترتيب المرشحين", accent:"#0E7C86", icon:IconSearchDoc, intake:true,
+    intro:"ارفع السير الذاتية وأضف الوصف الوظيفي، وسأحللها بعمق وتوازن: درجات لكل جدارة، رسوم بيانية، نقاط قوة وضعف ومخاطر، ومقارنة وترتيب وتقرير توظيف نهائي.",
     suggestions:[],
-    system:`أنت "أخصائي مفاضلة وفرز السير الذاتية" ضمن فريق وكلاء الموارد البشرية. تقرأ السير وتفاضل بين المرشحين بموضوعية تامة. التزم بالعدالة وعدم التحيز: لا تتأثر بالاسم أو الجنس أو الجنسية أو العمر أو الصورة، واحكم فقط على المهارات والخبرات والإنجازات ومدى مطابقتها للوصف الوظيفي. لكل مرشح: درجة من 100 مع تبرير، نقاط القوة، الفجوات، توصية. ثم جدول مقارنة وترتيب تنازلي وتوصية نهائية بأفضل المرشحين. وضّح أي معلومات ناقصة بدل افتراضها.${COMMON}` },
+    system:`أنت "خبير تحليل وفرز ومفاضلة السير الذاتية" ضمن فريق وكلاء الموارد البشرية، تقدّم تحليلًا عميقًا ومتوازنًا وتقارير توظيف احترافية.
+منهجك إلزامي:
+- اقرأ كل سيرة بعناية واحكم بموضوعية تامة وعدالة: لا تتأثر بالاسم أو الجنس أو الجنسية أو العمر أو الصورة، واحكم فقط على المهارات والخبرات والإنجازات ومطابقتها للوصف الوظيفي.
+- لكل مرشح قدّم نظرة متوازنة للجانبين معًا: نقاط القوة الحقيقية، ونقاط الضعف ومجالات التطوير، والمخاطر ومؤشرات التحفظ مثل الفجوات الزمنية وكثرة التنقل والمبالغات والمعلومات الناقصة. حتى المرشح القوي اذكر فجواته، وحتى الضعيف اذكر أي إيجابيات لديه.
+- قيّم كل مرشح عبر هذه المحاور بدرجات من 100: الخبرة، المهارات الفنية، التعليم، الإنجازات، الاستقرار الوظيفي، ملاءمة الدور. واعطِ درجة إجمالية مع مبرر.
+- وضّح كل معلومة ناقصة بدل افتراضها، واقترح محاور التركيز في المقابلة لكل مرشح.
+- إذا تعدد المرشحون فأضف ترتيبًا تنازليًا وتوصية نهائية مسببة بأفضلهم.
+- نظّم تقريرًا واضحًا: لكل مرشح عنوان ثم تحليله، ثم خلاصة تنفيذية ومقارنة.${CV_CONTRACT}${COMMON}` },
+  { id:"interview", name:"محلل المقابلات", role:"تحليل إجابات المرشحين وتقييمها", accent:"#C2683A", icon:IconInterview, intake:true,
+    intro:"ألصق أسئلة المقابلة وإجابات المرشح أو ارفع تفريغ المقابلة، وسأحللها بعمق وتوازن: درجات لكل جدارة، رسوم بيانية، نقاط قوة ومواضع قلق ومؤشرات حمراء، وأسئلة متابعة وتوصية.",
+    suggestions:[],
+    system:`أنت "محلل إجابات المقابلات الشخصية" ضمن فريق وكلاء الموارد البشرية، تقيّم أداء المرشح في المقابلة بعمق وتوازن وحياد.
+منهجك إلزامي:
+- حلّل إجابات المرشح إجابةً إجابة: ما الذي قيل فعلًا، وجودة المحتوى، ووضوح التواصل، وقوة الأدلة والأمثلة بمنهج STAR وهو الموقف والمهمة والإجراء والنتيجة، والاتساق والمصداقية الظاهرة.
+- قدّم نظرة متوازنة للجانبين: نقاط القوة الحقيقية، ومواضع الضعف والقلق، والمؤشرات الحمراء مثل التناقض والتهرب والإجابات السطحية والمبالغة والسلوك غير المهني. حتى المرشح القوي اذكر مواضع ضعفه، وحتى الضعيف اذكر إيجابياته.
+- قيّم عبر هذه الجدارات بدرجات من 100: الكفاءة الفنية، حل المشكلات، التواصل والوضوح، الملاءمة الثقافية، الدافعية، الأدلة والأمثلة. واعطِ درجة إجمالية وتوصية مسببة.
+- لا تفترض ما لم يُذكر، واقترح أسئلة متابعة لسد الفجوات. احكم على المحتوى لا على الشكل اللغوي وحده، والتزم العدالة وعدم التحيز.
+- نظّم التقرير: تقييم عام، ثم تحليل كل إجابة، ثم خلاصة متوازنة، ثم التوصية وأسئلة المتابعة.${INT_CONTRACT}${COMMON}` },
   { id:"relations", name:"أخصائي علاقات الموظفين", role:"التظلمات والانضباط والخطابات", accent:"#B7894A", icon:IconHeart,
     intro:"أتعامل مع الشكاوى والتظلمات والإجراءات التأديبية وخطابات الإنذار وحل النزاعات، موازنًا بين حقوق الموظف وحماية الشركة نظاميًا.",
     suggestions:["صِغ خطاب إنذار أول لتكرار التأخر عن الدوام","كيف أتعامل مع تظلم موظف بشكل عادل ونظامي؟","اكتب محضر اجتماع لمناقشة مخالفة سلوكية"],
@@ -190,6 +224,159 @@ function renderRich(text){
     out.push(<div key={i} style={{margin:"3px 0",lineHeight:1.85}}>{inline(line)}</div>);
   });
   return out;
+}
+
+/* ============================ Charts & Reports ============================ */
+function band(v){ v=Number(v)||0; return v>=75?"#1A6B52":v>=55?"#C98A2B":"#C0492F"; }
+function dimsToArr(d){ return d&&typeof d==="object" ? Object.keys(d).map(k=>({axis:k,label:k,value:Math.max(0,Math.min(100,Number(d[k])||0))})) : []; }
+
+function ScoreRing({value,size=72,label}){
+  const v=Math.max(0,Math.min(100,Number(value)||0));
+  const sw=Math.max(6,Math.round(size*0.11)), r=(size-sw)/2, c=2*Math.PI*r, off=c*(1-v/100), col=band(v), cc=size/2;
+  return (<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flexShrink:0}}>
+    <svg width={size} height={size}>
+      <circle cx={cc} cy={cc} r={r} fill="none" stroke="#E7ECE9" strokeWidth={sw}/>
+      <circle cx={cc} cy={cc} r={r} fill="none" stroke={col} strokeWidth={sw} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off} transform={`rotate(-90 ${cc} ${cc})`}/>
+      <text x={cc} y={cc} textAnchor="middle" dominantBaseline="central" style={{fontSize:size*0.3,fontWeight:800,fill:col,fontFamily:"'Tajawal',sans-serif"}}>{Math.round(v)}</text>
+    </svg>
+    {label&&<div style={{fontSize:12,fontWeight:700,color:col,textAlign:"center"}}>{label}</div>}
+  </div>);
+}
+function RadarChart({data,accent="#0E7C86",size=216}){
+  if(!data||data.length<3) return null;
+  const cx=size/2, cy=size/2, R=size/2-40;
+  const pt=(i,rr)=>{ const a=(-90+i*360/data.length)*Math.PI/180; return [cx+rr*Math.cos(a), cy+rr*Math.sin(a)]; };
+  const ring=rr=>data.map((_,i)=>pt(i,R*rr).join(",")).join(" ");
+  const dpoly=data.map((d,i)=>pt(i,R*d.value/100).join(",")).join(" ");
+  return (<svg width={size} height={size} style={{flexShrink:0}}>
+    {[0.25,0.5,0.75,1].map((r,k)=><polygon key={k} points={ring(r)} fill="none" stroke="#E4EAE7" strokeWidth="1"/>)}
+    {data.map((_,i)=>{const[x,y]=pt(i,R);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#E4EAE7" strokeWidth="1"/>;})}
+    <polygon points={dpoly} fill={hexToRgba(accent,.20)} stroke={accent} strokeWidth="2"/>
+    {data.map((d,i)=>{const[x,y]=pt(i,R*d.value/100);return <circle key={i} cx={x} cy={y} r="3" fill={accent}/>;})}
+    {data.map((d,i)=>{const[x,y]=pt(i,R+19);return <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="central" style={{fontSize:10,fontWeight:600,fill:"#46544E"}}>{d.axis}</text>;})}
+  </svg>);
+}
+function ScoreBars({data}){
+  if(!data||!data.length) return null;
+  return (<div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+    {data.map((d,i)=>{const v=Math.max(0,Math.min(100,Number(d.value)||0)),col=band(v);return (
+      <div key={i} style={{display:"flex",alignItems:"center",gap:9}}>
+        <div style={{width:108,fontSize:12,fontWeight:600,color:"#3A4742",textAlign:"right",flexShrink:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.label}</div>
+        <div style={{flex:1,height:9,background:"#EDF1EF",borderRadius:6,overflow:"hidden"}}><div style={{width:v+"%",height:"100%",background:col,borderRadius:6}}/></div>
+        <div style={{width:26,fontSize:12,fontWeight:800,color:col,flexShrink:0,textAlign:"left"}}>{Math.round(v)}</div>
+      </div>);})}
+  </div>);
+}
+function CompareBars({candidates}){
+  const s=[...candidates].sort((a,b)=>(Number(b.overall)||0)-(Number(a.overall)||0));
+  return (<div style={{display:"flex",flexDirection:"column",gap:10}}>
+    {s.map((c,i)=>{const v=Math.max(0,Math.min(100,Number(c.overall)||0)),col=band(v);return(
+      <div key={i} style={{display:"flex",alignItems:"center",gap:9}}>
+        <div style={{width:22,height:22,borderRadius:"50%",background:hexToRgba(col,.15),color:col,fontWeight:800,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+        <div style={{width:116,fontSize:13,fontWeight:700,color:"#1F2D28",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flexShrink:0}}>{c.name||"مرشح"}</div>
+        <div style={{flex:1,height:11,background:"#EDF1EF",borderRadius:6,overflow:"hidden"}}><div style={{width:v+"%",height:"100%",background:col,borderRadius:6}}/></div>
+        <div style={{width:30,fontSize:13,fontWeight:800,color:col,flexShrink:0,textAlign:"left"}}>{Math.round(v)}</div>
+      </div>);})}
+  </div>);
+}
+function RecBadge({text,value}){const col=band(value);return <span style={{display:"inline-block",fontSize:12,fontWeight:800,color:col,background:hexToRgba(col,.12),border:`1px solid ${hexToRgba(col,.5)}`,borderRadius:999,padding:"3px 12px"}}>{text}</span>;}
+function PillList({title,items,color}){
+  if(!items||!items.length) return null;
+  return (<div style={{marginTop:9}}>
+    <div style={{fontSize:12.5,fontWeight:800,color,marginBottom:5}}>{title}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+      {items.map((t,i)=><div key={i} style={{display:"flex",gap:7,fontSize:13,lineHeight:1.7}}><span style={{color,flexShrink:0,fontWeight:700}}>•</span><span style={{flex:1}}>{String(t)}</span></div>)}
+    </div>
+  </div>);
+}
+function Card({title,children}){
+  return (<div style={{border:`1px solid ${T.border}`,borderRadius:14,padding:"14px",background:"#fff",marginBottom:12}}>
+    {title&&<div style={{fontSize:13.5,fontWeight:800,color:T.ink,marginBottom:11,fontFamily:"'Tajawal',sans-serif"}}>{title}</div>}
+    {children}
+  </div>);
+}
+function ChartPair({dims,accent}){
+  if(!dims||dims.length<3) return <ScoreBars data={dims}/>;
+  return (<div style={{display:"flex",flexWrap:"wrap",gap:16,alignItems:"center",justifyContent:"center"}}>
+    <RadarChart data={dims} accent={accent}/>
+    <div style={{flex:1,minWidth:228}}><ScoreBars data={dims}/></div>
+  </div>);
+}
+function CandidateBlock({c,accent}){
+  const dims=dimsToArr(c.dimensions);
+  return (<div style={{border:`1px solid ${T.border}`,borderRadius:14,padding:14,marginBottom:12,background:"#fff"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:dims.length?12:0,flexWrap:"wrap"}}>
+      <ScoreRing value={c.overall} size={62}/>
+      <div style={{flex:1,minWidth:140}}>
+        <div style={{fontSize:15,fontWeight:800,color:T.ink}}>{c.name||"مرشح"}</div>
+        {c.recommendation&&<div style={{marginTop:6}}><RecBadge text={c.recommendation} value={c.overall}/></div>}
+      </div>
+    </div>
+    {dims.length>=3&&<ChartPair dims={dims} accent={accent}/>}
+    <PillList title="نقاط القوة" items={c.strengths} color="#1A6B52"/>
+    <PillList title="نقاط الضعف ومجالات التطوير" items={c.weaknesses} color="#C98A2B"/>
+    <PillList title="مخاطر ومؤشرات تحفّظ" items={c.risks} color="#C0492F"/>
+    <PillList title="محاور التركيز في المقابلة" items={c.interviewFocus} color="#2D5B8E"/>
+  </div>);
+}
+function ReportView({data,accent}){
+  try{
+    if(!data) return null;
+    if(data.type==="interview" || (data.dimensions && !data.candidates)){
+      const dims=dimsToArr(data.dimensions);
+      const ans=(data.answers||[]).map((a,i)=>({label:"س"+(i+1),value:Number(a.score)||0}));
+      return (<div style={{marginBottom:2}}>
+        <Card title="التقييم العام">
+          <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+            <ScoreRing value={data.overall} size={86}/>
+            <div style={{flex:1,minWidth:150}}>
+              {data.candidate&&<div style={{fontSize:15,fontWeight:800,color:T.ink}}>{data.candidate}</div>}
+              {data.role&&<div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{data.role}</div>}
+              {data.recommendation&&<div style={{marginTop:8}}><RecBadge text={data.recommendation} value={data.overall}/></div>}
+            </div>
+          </div>
+        </Card>
+        {dims.length>=3&&<Card title="ملف الجدارات"><ChartPair dims={dims} accent={accent}/></Card>}
+        {ans.length>0&&<Card title="جودة الإجابات"><ScoreBars data={ans}/></Card>}
+        {(data.strengths||data.concerns||data.redFlags||data.followUps)&&<Card title="القراءة المتوازنة">
+          <PillList title="نقاط القوة" items={data.strengths} color="#1A6B52"/>
+          <PillList title="مواضع الضعف والقلق" items={data.concerns} color="#C98A2B"/>
+          <PillList title="مؤشرات حمراء" items={data.redFlags} color="#C0492F"/>
+          <PillList title="أسئلة متابعة مقترحة" items={data.followUps} color="#2D5B8E"/>
+        </Card>}
+      </div>);
+    }
+    const cands=data.candidates||[];
+    if(!cands.length) return null;
+    return (<div style={{marginBottom:2}}>
+      {cands.length>1&&<Card title="المقارنة والترتيب"><CompareBars candidates={cands}/></Card>}
+      {cands.map((c,i)=><CandidateBlock key={i} c={c} accent={accent}/>)}
+    </div>);
+  }catch(e){ return null; }
+}
+function tryParse(s){
+  if(!s) return null;
+  const cleaned=s.replace(/,\s*([}\]])/g,"$1");
+  for(const v of [s,cleaned]){ try{ return JSON.parse(v); }catch(e){} }
+  const i=s.indexOf("{"), j=s.lastIndexOf("}");
+  if(i>=0&&j>i){ try{ return JSON.parse(s.slice(i,j+1).replace(/,\s*([}\]])/g,"$1")); }catch(e){} }
+  return null;
+}
+function parseReport(text){
+  if(!text) return {data:null,prose:""};
+  const reg=/```(?:hrjson|json)?\s*([\s\S]*?)```/gi;
+  let m,target=null;
+  while((m=reg.exec(text))!==null){ if(/(type|candidates|dimensions)/.test(m[1]||"")) target={raw:m[0],body:m[1]}; }
+  if(!target) return {data:null,prose:text};
+  return {data:tryParse(target.body.trim()), prose:text.replace(target.raw,"").trim()};
+}
+function AssistantBody({content,accent}){
+  const {data,prose}=parseReport(content);
+  return (<div>
+    {data&&<ReportView data={data} accent={accent}/>}
+    {prose&&<div style={{marginTop:data?10:0}}>{renderRich(prose)}</div>}
+    {!data&&!prose&&renderRich(content)}
+  </div>);
 }
 
 /* ============================ Files & API ============================ */
@@ -327,6 +514,8 @@ function App(){
   const [jobDesc,setJobDesc]=useState("");
   const [cvFiles,setCvFiles]=useState([]);
   const [dragOver,setDragOver]=useState(false);
+  const [intRole,setIntRole]=useState("");
+  const [intText,setIntText]=useState("");
 
   const endRef=useRef(null), taRef=useRef(null), fileRef=useRef(null), cvRef=useRef(null);
   const agent=AGENTS.find(a=>a.id===activeId);
@@ -386,7 +575,7 @@ function App(){
     setLoading(true); setError(null);
     let txt=`الوصف الوظيفي:\n${jobDesc.trim()||"(لم يُحدد وصف وظيفي. استخرج معايير التقييم من السير نفسها واذكر ذلك.)"}\n\nعدد المرشحين: ${ready.length}\n`;
     ready.forEach((c,i)=>{ txt+=`\n===== المرشح ${i+1}: ${c.name} =====\n${c.text}\n`; });
-    txt+=`\n\nالمطلوب: اقرأ السير وفاضل بين المرشحين بموضوعية وعدالة. لكل مرشح: درجة من 100، نقاط القوة، الفجوات، توصية. ثم جدول مقارنة وترتيب تنازلي، واختم بالتوصية النهائية بأفضل المرشحين مع المبرر.`;
+    txt+=`\n\nالمطلوب: حلّل السير وفاضل بين المرشحين بموضوعية وعدالة وبعمق وتوازن. لكل مرشح: درجة من 100 لكل جدارة ودرجة إجمالية، ونقاط القوة، ونقاط الضعف ومجالات التطوير، والمخاطر، ومحاور التركيز في المقابلة، وتوصية. ثم مقارنة وترتيب تنازلي وتوصية نهائية مسببة. ثم أضف كتلة البيانات المنظمة في النهاية.`;
     const userMsg={id:uid(),role:"user",content:txt,display:`مفاضلة ${ready.length} مرشحين${jobDesc.trim()?" حسب الوصف الوظيفي":""}`,atts:ready.map(c=>c.name)};
     const next=[userMsg];
     setConversations(p=>({...p,[activeId]:next}));
@@ -396,7 +585,25 @@ function App(){
     }catch(e){ setError(errMsg(e)); }
     finally{ setLoading(false); }
   }
-  const resetCv=()=>{ setConversations(p=>({...p,[activeId]:[]})); setCvFiles([]); setJobDesc(""); setError(null); };
+  async function runInterview(){
+    const ready=cvFiles.filter(c=>c.status==="done"&&c.text);
+    const pasted=intText.trim();
+    if((ready.length===0&&!pasted)||loading) return;
+    setLoading(true); setError(null);
+    let txt=`الوظيفة أو الدور: ${intRole.trim()||"(غير محدد)"}\n\nأسئلة المقابلة وإجابات المرشح:\n`;
+    if(pasted) txt+=pasted+"\n";
+    ready.forEach((c,i)=>{ txt+=`\n===== تفريغ مرفق ${i+1}: ${c.name} =====\n${c.text}\n`; });
+    txt+=`\n\nالمطلوب: حلّل أداء المرشح في المقابلة بعمق وتوازن، إجابةً إجابة، مع درجات لكل جدارة، ونقاط القوة ومواضع الضعف والمؤشرات الحمراء، وأسئلة متابعة وتوصية نهائية. ثم أضف كتلة البيانات المنظمة في النهاية.`;
+    const userMsg={id:uid(),role:"user",content:txt,display:`تحليل مقابلة${intRole.trim()?" لدور "+intRole.trim():""}`,atts:ready.map(c=>c.name)};
+    const next=[userMsg];
+    setConversations(p=>({...p,[activeId]:next}));
+    try{
+      const reply=await callAI(agent.system,next);
+      setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
+    }catch(e){ setError(errMsg(e)); }
+    finally{ setLoading(false); }
+  }
+  const resetCv=()=>{ setConversations(p=>({...p,[activeId]:[]})); setCvFiles([]); setJobDesc(""); setIntRole(""); setIntText(""); setError(null); };
   const newChat=()=>{ if(agent.intake) resetCv(); else { setConversations(p=>({...p,[activeId]:[]})); setError(null); } };
 
   const onInput=e=>{ setInput(e.target.value); const el=taRef.current; if(el){ el.style.height="auto"; el.style.height=Math.min(el.scrollHeight,150)+"px"; } };
@@ -460,7 +667,7 @@ function App(){
             <div style={{maxWidth:"86%"}}>
               <div style={{fontSize:11.5,fontWeight:600,color:user?T.muted:agent.accent,marginBottom:5,paddingInline:4}}>{user?"عاطف":agent.name}</div>
               <div style={{borderRadius:16,padding:"12px 15px",fontSize:14.5,background:user?T.user:T.surface,color:user?"#F2F5F3":T.ink,border:user?"none":`1px solid ${T.border}`,boxShadow:user?"none":"0 1px 2px rgba(20,30,25,.05)",...(user?{borderTopRightRadius:6}:{borderTopLeftRadius:6,borderInlineStart:`3px solid ${hexToRgba(agent.accent,.5)}`})}}>
-                {user?<div style={{whiteSpace:"pre-wrap",lineHeight:1.8}}>{m.display}</div>:renderRich(m.content)}
+                {user?<div style={{whiteSpace:"pre-wrap",lineHeight:1.8}}>{m.display}</div>:<AssistantBody content={m.content} accent={agent.accent}/>}
                 {user&&attChips(m.atts,true)}
               </div>
             </div>
@@ -471,7 +678,7 @@ function App(){
         <div className="hra-fade" style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:9,background:T.surface,border:`1px solid ${T.border}`,borderRadius:16,padding:"11px 15px",color:T.muted,fontSize:13.5}}>
             <span className="hra-spin" style={{display:"inline-flex"}}><IconSpinner size={16} color={agent.accent}/></span>
-            {agent.intake?"يقرأ ويفاضل...":"يكتب الآن..."}
+            {agent.intake?"يحلّل الآن...":"يكتب الآن..."}
           </div>
         </div>
       )}
@@ -493,7 +700,7 @@ function App(){
   );
 
   const cvReady=cvFiles.filter(c=>c.status==="done").length;
-  const intake=(
+  const cvIntake=(
     <div className="hra-fade" style={{maxWidth:760,margin:"0 auto",width:"100%"}}>
       <div style={{textAlign:"center",marginBottom:18}}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Seal Icon={agent.icon} accent={agent.accent} size={60}/></div>
@@ -528,6 +735,46 @@ function App(){
       </button>
     </div>
   );
+
+  const interviewIntake=(
+    <div className="hra-fade" style={{maxWidth:760,margin:"0 auto",width:"100%"}}>
+      <div style={{textAlign:"center",marginBottom:18}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Seal Icon={agent.icon} accent={agent.accent} size={60}/></div>
+        <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:700,fontSize:21,color:T.ink}}>{agent.name}</div>
+        <div style={{color:T.muted,fontSize:14,lineHeight:1.8,marginTop:6,maxWidth:560,marginInline:"auto"}}>{agent.intro}</div>
+      </div>
+      <label style={{fontSize:13,fontWeight:600,color:T.ink}}>الوظيفة أو الدور (اختياري، يحسّن دقة التحليل)</label>
+      <input value={intRole} onChange={e=>setIntRole(e.target.value)} placeholder="مثال: أخصائي موارد بشرية، مطور Backend..." style={{width:"100%",marginTop:6,border:`1px solid ${T.border}`,borderRadius:12,padding:"11px 13px",fontSize:14,background:"#FBFCFB",color:T.ink}}/>
+      <label style={{display:"block",fontSize:13,fontWeight:600,color:T.ink,marginTop:14}}>أسئلة المقابلة وإجابات المرشح</label>
+      <textarea value={intText} onChange={e=>setIntText(e.target.value)} placeholder="ألصق هنا الأسئلة وإجابات المرشح. مثال: س: حدثني عن تحدٍ واجهته... ج: ..." style={{width:"100%",marginTop:6,minHeight:150,resize:"vertical",border:`1px solid ${T.border}`,borderRadius:12,padding:"11px 13px",fontSize:14,lineHeight:1.8,background:"#FBFCFB",color:T.ink}}/>
+      <div onClick={()=>cvRef.current&&cvRef.current.click()} onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);addCvs(e.dataTransfer.files);}}
+        style={{marginTop:14,border:`1.5px dashed ${dragOver?agent.accent:T.border}`,background:dragOver?hexToRgba(agent.accent,.06):"#FBFCFB",borderRadius:14,padding:"18px 16px",textAlign:"center",cursor:"pointer"}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:6}}><IconUpload size={22} color={agent.accent}/></div>
+        <div style={{fontSize:13.5,color:T.ink,fontWeight:600}}>أو ارفع تفريغ المقابلة (اختياري)</div>
+        <div style={{fontSize:12,color:T.muted,marginTop:4}}>يدعم PDF و DOCX و TXT</div>
+        <input ref={cvRef} type="file" multiple accept=".pdf,.docx,.txt,.md" style={{display:"none"}} onChange={e=>{addCvs(e.target.files);e.target.value="";}}/>
+      </div>
+      {cvFiles.length>0&&(
+        <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:7}}>
+          {cvFiles.map(c=>(
+            <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,border:`1px solid ${T.border}`,borderRadius:10,padding:"9px 11px",background:"#fff"}}>
+              <IconDoc size={17} color={agent.accent}/>
+              <span style={{flex:1,minWidth:0,fontSize:13.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</span>
+              {c.status==="reading"&&<span className="hra-spin" style={{display:"inline-flex"}}><IconSpinner size={15} color={T.muted}/></span>}
+              {c.status==="done"&&<IconCheck size={16} color="#1A6B52"/>}
+              {c.status==="error"&&<span style={{fontSize:11.5,color:"#9B2C2C"}}>تعذّرت القراءة</span>}
+              <button onClick={()=>setCvFiles(p=>p.filter(x=>x.id!==c.id))} aria-label="حذف" style={{border:"none",background:"transparent",color:T.muted,padding:2}}><IconX size={16}/></button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button onClick={runInterview} disabled={loading||(!intText.trim()&&cvReady===0)} style={{marginTop:16,width:"100%",border:"none",borderRadius:12,padding:"13px",fontSize:15,fontWeight:700,color:"#fff",background:(loading||(!intText.trim()&&cvReady===0))?"#C3CCC7":agent.accent}}>
+        {loading?"جارٍ التحليل...":"حلّل إجابات المقابلة"}
+      </button>
+    </div>
+  );
+
+  const intakeView = agent.id==="interview" ? interviewIntake : cvIntake;
 
   const composer=(
     <div style={{borderTop:`1px solid ${T.border}`,background:T.surface,padding:isMobile?"10px 12px":"12px 18px"}}>
@@ -564,7 +811,7 @@ function App(){
         {big&&<div style={{fontSize:12,color:T.muted,marginTop:1}}>{agent.role}</div>}
       </div>
       <button onClick={newChat} style={{display:"flex",alignItems:"center",gap:6,border:`1px solid ${T.border}`,background:"#fff",color:T.muted,borderRadius:10,padding:big?"7px 12px":"6px 9px",fontSize:12.5,fontWeight:600}}>
-        <IconPlus size={15}/> {agent.intake?"مفاضلة جديدة":"محادثة جديدة"}
+        <IconPlus size={15}/> {agent.intake?"تحليل جديد":"محادثة جديدة"}
       </button>
     </div>
   );
@@ -594,7 +841,7 @@ function App(){
       <main style={{flex:1,display:"flex",flexDirection:"column",minWidth:0,minHeight:0}}>
         {header(!isMobile)}
         <div className="hra-scroll" style={{flex:1,overflowY:"auto",padding:isMobile?"16px 12px":"22px 18px",display:"flex",flexDirection:"column"}}>
-          {showIntake?<div style={{margin:"auto",width:"100%"}}>{intake}</div>:showEmpty?<div style={{margin:"auto",width:"100%"}}>{empty}</div>:thread}
+          {showIntake?<div style={{margin:"auto",width:"100%"}}>{intakeView}</div>:showEmpty?<div style={{margin:"auto",width:"100%"}}>{empty}</div>:thread}
         </div>
         {(!showIntake)&&composer}
         {showIntake&&error&&<div style={{padding:"0 16px 12px"}}><div style={{maxWidth:760,margin:"0 auto",background:"#FCEDED",color:"#9B2C2C",border:"1px solid #F3C9C9",borderRadius:10,padding:"8px 12px",fontSize:13}}>{error}</div></div>}
