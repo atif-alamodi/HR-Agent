@@ -398,18 +398,36 @@ function recColor(rec,val){
 }
 function RecCard({data}){
   const val=Number(data.overall)||0;
-  const col=recColor(data.recommendation,val);
+  const rec=data.recommendation||(data.type==="interview"?(val>=78?"يوصى بالتقدم":val>=58?"واعد بتحفظ":"غير مناسب"):(val>=85?"توظيف مباشر":val>=68?"مقابلة":val>=52?"مقابلة بتحفظ":"غير مناسب"));
+  const col=recColor(rec,val);
   const strength=(data.strength!=null&&data.strength!=="")?Math.round(Number(data.strength)||0):Math.round(val);
   return (<div style={{border:`1px solid ${T.border}`,borderRadius:14,padding:14,background:"#fff",marginBottom:12,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
     <ScoreRing value={val} size={86}/>
     <div style={{flex:1,minWidth:160}}>
       {(data.name||data.candidate)&&<div style={{fontSize:16,fontWeight:800,color:T.ink}}>{data.name||data.candidate}</div>}
       {(data.role||data.jobtitle)&&<div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{data.role||data.jobtitle}</div>}
-      {data.recommendation&&<div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <span style={{display:"inline-block",fontSize:13,fontWeight:800,color:col,background:hexToRgba(col,.12),border:`1px solid ${hexToRgba(col,.5)}`,borderRadius:999,padding:"4px 14px"}}>{data.recommendation}</span>
+      {rec&&<div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <span style={{display:"inline-block",fontSize:13,fontWeight:800,color:col,background:hexToRgba(col,.12),border:`1px solid ${hexToRgba(col,.5)}`,borderRadius:999,padding:"4px 14px"}}>{rec}</span>
         <span style={{fontSize:13,fontWeight:700,color:col}}>قوة الترشيح: {strength}%</span>
       </div>}
     </div>
+  </div>);
+}
+function ScoreTable({dims,accent}){
+  if(!dims||!dims.length) return null;
+  const ac=accent||"#2F8C8C";
+  const lvl=v=>v>=75?"قوي":v>=55?"متوسط":"يحتاج تطوير";
+  return (<div style={{border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden",marginBottom:12}}>
+    <div style={{display:"flex",background:hexToRgba(ac,.10),fontWeight:800,fontSize:12.5,color:T.ink}}>
+      <div style={{flex:2,padding:"9px 12px"}}>الجدارة</div>
+      <div style={{flex:1,padding:"9px 12px",textAlign:"center"}}>الدرجة /100</div>
+      <div style={{flex:1,padding:"9px 12px",textAlign:"center"}}>المستوى</div>
+    </div>
+    {dims.map((d,i)=>(<div key={i} style={{display:"flex",borderTop:`1px solid ${T.border}`,fontSize:12.5}}>
+      <div style={{flex:2,padding:"8px 12px",fontWeight:600,color:T.ink}}>{d.label||d.axis}</div>
+      <div style={{flex:1,padding:"8px 12px",textAlign:"center",fontWeight:800,color:band(d.value)}}>{d.value}</div>
+      <div style={{flex:1,padding:"8px 12px",textAlign:"center",color:band(d.value),fontWeight:700}}>{lvl(d.value)}</div>
+    </div>))}
   </div>);
 }
 function ReportView({data,accent}){
@@ -421,6 +439,7 @@ function ReportView({data,accent}){
       return (<div style={{marginBottom:2}}>
         <RecCard data={data}/>
         {dims.length>=3&&<Card title="ملف الجدارات"><ChartPair dims={dims} accent={accent}/></Card>}
+        {dims.length>0&&<Card title="جدول التقييم"><ScoreTable dims={dims} accent={accent}/></Card>}
         {ans.length>0&&<Card title="جودة الإجابات"><ScoreBars data={ans}/></Card>}
       </div>);
     }
@@ -428,6 +447,7 @@ function ReportView({data,accent}){
     return (<div style={{marginBottom:2}}>
       <RecCard data={data}/>
       {dims.length>=3&&<Card title="ملف الجدارات"><ChartPair dims={dims} accent={accent}/></Card>}
+      {dims.length>0&&<Card title="جدول التقييم"><ScoreTable dims={dims} accent={accent}/></Card>}
       {cands.length>1&&<Card title="المقارنة والترتيب"><CompareBars candidates={cands}/></Card>}
     </div>);
   }catch(e){ return null; }
@@ -449,6 +469,7 @@ function parseHRData(text){
     else d[k]=v;
   });
   if(!d.type) d.type=(d.candidate||d.role||d.ans.length)?"interview":"cv";
+  if(!d.recommendation && d.overall!=null){ const v=d.overall; d.recommendation = d.type==="interview" ? (v>=78?"يوصى بالتقدم":v>=58?"واعد بتحفظ":"غير مناسب") : (v>=85?"توظيف مباشر":v>=68?"مقابلة":v>=52?"مقابلة بتحفظ":"غير مناسب"); }
   return (d.dims.length||d.ans.length||d.overall!=null||d.recommendation)?d:null;
 }
 function stripBlocks(text){
@@ -638,10 +659,14 @@ function App(){
   const lastReport=[...msgs].reverse().find(m=>m.role==="assistant");
   useEffect(()=>{
     if(!printMsg) return;
-    const t=setTimeout(()=>{ try{window.print();}catch(e){} },140);
+    let cancelled=false;
+    const fire=()=>{ if(!cancelled){ try{window.print();}catch(e){} } };
+    const go=()=>{ const fr=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+      fr.then(()=>setTimeout(fire,450)).catch(()=>setTimeout(fire,450)); };
+    const t=setTimeout(go,120);
     const done=()=>setPrintMsg(null);
     window.addEventListener("afterprint",done,{once:true});
-    return ()=>{ clearTimeout(t); window.removeEventListener("afterprint",done); };
+    return ()=>{ cancelled=true; clearTimeout(t); window.removeEventListener("afterprint",done); };
   },[printMsg]);
   const cfg=getConfig();
   const configured=!!(cfg.worker||cfg.key);
