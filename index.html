@@ -212,8 +212,12 @@ const AGENTS = [
 العمق الفني التخصصي الخالص المرتبط بالدور: الأدوات والتقنيات والشهادات والمشاريع.
 ## نقاط القوة ونقاط الضعف والمخاطر
 عدّد بوضوح: نقاط القوة، ثم نقاط الضعف ومجالات التطوير، ثم المخاطر ومؤشرات التحفظ.
-## محاور التركيز في المقابلة
-أسئلة ومحاور يجب التحقق منها في المقابلة لسد الفجوات.
+## أسئلة المقابلة المقترحة
+اكتب من 5 إلى 7 أسئلة دقيقة ومخصّصة لهذا المرشح وهذا الدور تحديدًا، لا أسئلة عامة مكرّرة. لكل سؤال التزم بهذا الشكل:
+- **السؤال:** صياغة سلوكية ("حدّثني عن موقف...") أو موقفية ("كيف ستتعامل لو...") مبنية على شيء حقيقي ورد في السيرة أو على فجوة/خطر اكتشفته.
+- **يقيس:** الكفاءة أو الفجوة المستهدفة (اذكرها صراحة).
+- **إجابة قوية تتضمّن:** سطر واحد يوضّح مؤشرات الإجابة الممتازة.
+امنع تمامًا الأسئلة المبتذلة مثل "ما نقاط ضعفك" أو "أين ترى نفسك بعد خمس سنوات" أو "حدّثني عن نفسك". كل سؤال يجب أن يكون قابلًا للتمييز بين مرشح قوي وضعيف.
 ## جدول التقييم
 جدول Markdown بالأعمدة: | الجدارة | الدرجة /100 | الملاحظة | يغطي كل المحاور بصف لكل جدارة.
 ## التوصية النهائية
@@ -479,6 +483,46 @@ function parseReport(text){
   if(!text) return {data:null,prose:""};
   return {data:parseHRData(text), prose:stripBlocks(text)};
 }
+async function ensureBlock(reply, sourceText, type){
+  try{
+    const d=parseHRData(reply);
+    const ok = d && (((d.dims&&d.dims.length>=3)) || (d.ans&&d.ans.length>=2));
+    if(ok) return reply;
+    const cvTpl=`<<<HRDATA>>>
+type=cv
+name=اسم المرشح
+overall=الدرجة الإجمالية
+recommendation=واحدة من: توظيف مباشر | مقابلة | مقابلة بتحفظ | غير مناسب
+strength=نسبة قوة الترشيح
+dim=كفاءات أساسية|درجة
+dim=كفاءات مشتركة|درجة
+dim=كفاءات تخصصية|درجة
+dim=الخبرة|درجة
+dim=الإنجازات|درجة
+dim=ملاءمة الدور|درجة
+<<<END>>>`;
+    const intTpl=`<<<HRDATA>>>
+type=interview
+name=اسم المرشح إن وُجد
+overall=الجاهزية الإجمالية
+recommendation=واحدة من: يوصى بالتقدم | واعد بتحفظ | غير مناسب
+strength=نسبة الجاهزية
+dim=الكفاءة الفنية|درجة
+dim=حل المشكلات|درجة
+dim=التواصل والوضوح|درجة
+dim=الملاءمة الثقافية|درجة
+dim=الدافعية|درجة
+dim=الأدلة والأمثلة|درجة
+<<<END>>>`;
+    const tpl = type==="interview"?intTpl:cvTpl;
+    const sys = `أنت مستخرج بيانات صارم. اقرأ النص التالي وأخرج هذه الكتلة فقط، دون أي نص أو شرح قبلها أو بعدها، بأرقام صحيحة من 0 إلى 100 مبنية على النص:\n${tpl}`;
+    const base = (reply && reply.replace(/\s/g,"").length>40) ? reply : (sourceText||"");
+    const blk = await callAI(sys,[{role:"user",content:String(base).slice(0,6000)}]);
+    const m = blk && blk.match(/<<<HRDATA>>>[\s\S]*?<<<END>>>/i);
+    if(m) return m[0] + "\n\n" + (reply||"");
+    return reply;
+  }catch(e){ return reply; }
+}
 function AssistantBody({content,accent}){
   const {data,prose}=parseReport(content);
   return (<div>
@@ -731,7 +775,8 @@ function App(){
     const next=[userMsg];
     setConversations(p=>({...p,[activeId]:next}));
     try{
-      const reply=await callAI(agent.system,next,agent.model);
+      let reply=await callAI(agent.system,next,agent.model);
+      reply=await ensureBlock(reply, txt, "cv");
       setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
     }catch(e){ setError(errMsg(e)); }
     finally{ setLoading(false); }
@@ -749,7 +794,8 @@ function App(){
     const next=[userMsg];
     setConversations(p=>({...p,[activeId]:next}));
     try{
-      const reply=await callAI(agent.system,next,agent.model);
+      let reply=await callAI(agent.system,next,agent.model);
+      reply=await ensureBlock(reply, txt, "interview");
       setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
     }catch(e){ setError(errMsg(e)); }
     finally{ setLoading(false); }
