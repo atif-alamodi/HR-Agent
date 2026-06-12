@@ -48,6 +48,17 @@
   @keyframes hraSpin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion: reduce){.hra-fade,.hra-spin{animation:none !important}}
   .splash{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px}
+  @media print{
+    html,body{background:#fff !important}
+    body *{visibility:hidden !important}
+    #print-area, #print-area *{visibility:visible !important}
+    #print-area{position:absolute !important;left:0 !important;top:0 !important;width:100% !important;padding:0 !important;background:#fff !important}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+    @page{margin:14mm}
+    h2,h3{break-after:avoid;break-inside:avoid}
+    svg,table,.pr-card{break-inside:avoid}
+    .no-print{display:none !important}
+  }
 </style>
 </head>
 <body>
@@ -578,6 +589,31 @@ function Settings({onClose}){
 }
 
 /* ============================ App ============================ */
+function PrintReport({msg,agent}){
+  let today="";
+  try{ today=new Date().toLocaleDateString('ar-u-ca-gregory',{year:'numeric',month:'long',day:'numeric'}); }
+  catch(e){ today=new Date().toLocaleDateString('en-GB'); }
+  return (
+    <div style={{fontFamily:"'IBM Plex Sans Arabic',sans-serif",color:T.ink,background:"#fff",padding:"4px 2px"}}>
+      <div style={{borderBottom:`3px solid ${agent.accent}`,paddingBottom:13,marginBottom:18,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div>
+          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو</div>
+          <div style={{fontSize:21,fontWeight:800,marginTop:6,fontFamily:"'Tajawal',sans-serif",color:T.ink}}>{agent.name}</div>
+          <div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{agent.role}</div>
+        </div>
+        <div style={{textAlign:"left",fontSize:11.5,color:T.muted,lineHeight:1.9}}>
+          <div>{today}</div>
+          <div style={{display:"inline-block",marginTop:4,background:hexToRgba(agent.accent,.12),color:agent.accent,borderRadius:6,padding:"2px 8px",fontWeight:700,fontSize:11}}>تقرير سري</div>
+        </div>
+      </div>
+      <AssistantBody content={msg.content} accent={agent.accent}/>
+      <div style={{marginTop:24,paddingTop:11,borderTop:`1px solid ${T.border}`,fontSize:10.5,color:T.muted,display:"flex",justifyContent:"space-between",gap:12}}>
+        <span style={{fontWeight:700}}>فريق إدارة الموارد البشرية</span>
+        <span>أداة دعم قرار قائمة على الذكاء الاصطناعي · للاسترشاد لا للاعتماد المطلق</span>
+      </div>
+    </div>
+  );
+}
 function App(){
   const [activeId,setActiveId]=useState(AGENTS[0].id);
   const [conversations,setConversations]=useState({});
@@ -598,6 +634,15 @@ function App(){
   const endRef=useRef(null), taRef=useRef(null), fileRef=useRef(null), cvRef=useRef(null);
   const agent=AGENTS.find(a=>a.id===activeId);
   const msgs=conversations[activeId]||[];
+  const [printMsg,setPrintMsg]=useState(null);
+  const lastReport=[...msgs].reverse().find(m=>m.role==="assistant");
+  useEffect(()=>{
+    if(!printMsg) return;
+    const t=setTimeout(()=>{ try{window.print();}catch(e){} },140);
+    const done=()=>setPrintMsg(null);
+    window.addEventListener("afterprint",done,{once:true});
+    return ()=>{ clearTimeout(t); window.removeEventListener("afterprint",done); };
+  },[printMsg]);
   const cfg=getConfig();
   const configured=!!(cfg.worker||cfg.key);
 
@@ -891,6 +936,11 @@ function App(){
         <div style={{fontWeight:700,fontSize:big?15.5:14,color:T.ink,fontFamily:"'Tajawal',sans-serif"}}>{agent.name}</div>
         {big&&<div style={{fontSize:12,color:T.muted,marginTop:1}}>{agent.role}</div>}
       </div>
+      {lastReport&&(
+        <button className="no-print" onClick={()=>setPrintMsg(lastReport)} title="طباعة أو حفظ PDF" style={{display:"flex",alignItems:"center",gap:6,border:`1px solid ${hexToRgba(agent.accent,.45)}`,background:hexToRgba(agent.accent,.08),color:agent.accent,borderRadius:10,padding:big?"7px 12px":"6px 9px",fontSize:12.5,fontWeight:700}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v11M7 10l5 5 5-5M5 21h14"/></svg> PDF
+        </button>
+      )}
       <button onClick={newChat} style={{display:"flex",alignItems:"center",gap:6,border:`1px solid ${T.border}`,background:"#fff",color:T.muted,borderRadius:10,padding:big?"7px 12px":"6px 9px",fontSize:12.5,fontWeight:600}}>
         <IconPlus size={15}/> {agent.intake?"تحليل جديد":"محادثة جديدة"}
       </button>
@@ -929,6 +979,11 @@ function App(){
       </main>
 
       {showSettings&&<Settings onClose={()=>{ setShowSettings(false); setError(null); setCfgVersion(v=>v+1); }}/>}
+      {printMsg&&(
+        <div id="print-area" dir="rtl" style={{position:"absolute",left:"-99999px",top:0,width:"190mm",maxWidth:"190mm",background:"#fff"}}>
+          <PrintReport msg={printMsg} agent={agent}/>
+        </div>
+      )}
     </div>
   );
 }
