@@ -662,7 +662,7 @@ function PrintReport({msg,agent}){
     <div style={{fontFamily:"'IBM Plex Sans Arabic',sans-serif",color:T.ink,background:"#fff",padding:"4px 2px"}}>
       <div style={{borderBottom:`3px solid ${agent.accent}`,paddingBottom:13,marginBottom:18,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div>
-          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو</div>
+          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو · v7</div>
           <div style={{fontSize:21,fontWeight:800,marginTop:6,fontFamily:"'Tajawal',sans-serif",color:T.ink}}>{agent.name}</div>
           <div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{agent.role}</div>
         </div>
@@ -812,7 +812,7 @@ function App(){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div>
           <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:800,fontSize:isMobile?18:21,color:T.sideText,letterSpacing:".2px"}}>وكلاء الموارد البشرية</div>
-          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو</div>
+          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو · v7</div>
         </div>
         <button onClick={()=>setShowSettings(true)} aria-label="الإعدادات" style={{border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)",color:T.sideText,borderRadius:10,padding:8}}><IconGear size={18}/></button>
       </div>
