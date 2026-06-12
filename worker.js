@@ -1,6 +1,6 @@
 /*
  * وسيط Cloudflare Worker لفريق وكلاء الموارد البشرية
- * Cloudflare Workers AI المجاني. نموذج سريع لتقليل زمن الاستجابة.
+ * Cloudflare Workers AI المجاني. يدعم نموذجًا لكل وكيل مع رجوع تلقائي إلى النموذج السريع.
  * الحصة المجانية: 10,000 وحدة/يوم، تتجدد 00:00 UTC.
  * النشر: wrangler deploy  (يتطلب ربط [ai] باسم AI)
  */
@@ -18,8 +18,15 @@ function json(obj, status = 200) {
   });
 }
 
-// نموذج سريع (8B) لخفض زمن الاستجابة مع عربية مقبولة
-const MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+// النموذج السريع الافتراضي (8B) لبقية الوكلاء، واحتياطي عند تعذّر أي نموذج أقوى
+const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+// النماذج المسموح للواجهة باختيارها (قائمة بيضاء)
+const ALLOWED_MODELS = {
+  "@cf/meta/llama-3.1-8b-instruct-fast": 1,
+  "@cf/meta/llama-3.3-70b-instruct-fp8-fast": 1,
+  "@cf/mistralai/mistral-small-3.1-24b-instruct": 1,
+  "@cf/meta/llama-4-scout-17b-16e-instruct": 1,
+};
 const ALLOWED_ORIGINS = ["https://atif-alamodi.github.io"];
 
 function flatten(content) {
@@ -55,6 +62,19 @@ function extractText(out) {
   return "";
 }
 
+async function runModel(env, model, messages, max_tokens) {
+  const noThink = model.indexOf("qwen") !== -1 ? "\n/no_think" : "";
+  const msgs = noThink
+    ? messages.map((m) =>
+        m.role === "system" ? { role: "system", content: m.content + noThink } : m
+      )
+    : messages;
+  const out = await env.AI.run(model, { messages: msgs, max_tokens });
+  let text = extractText(out);
+  if (typeof text !== "string") text = String(text || "");
+  return text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS")
@@ -79,9 +99,7 @@ export default {
     const sys = (body.system || "").toString();
     const inMsgs = Array.isArray(body.messages) ? body.messages : [];
     const messages = [];
-    // تعطيل التفكير فقط لنماذج Qwen
-    const noThink = MODEL.indexOf("qwen") !== -1 ? "\n/no_think" : "";
-    if (sys) messages.push({ role: "system", content: sys + noThink });
+    if (sys) messages.push({ role: "system", content: sys });
     for (const m of inMsgs) {
       const role = m && m.role === "assistant" ? "assistant" : "user";
       const content = flatten(m && m.content);
@@ -90,12 +108,20 @@ export default {
     if (messages.length === 0) return json({ error: "no messages" }, 400);
 
     const max_tokens = Math.min(Number(body.max_tokens) || 2048, 4096);
+    const wanted = ALLOWED_MODELS[body.model] ? body.model : DEFAULT_MODEL;
 
     try {
-      const out = await env.AI.run(MODEL, { messages, max_tokens });
-      let text = extractText(out);
-      if (typeof text !== "string") text = String(text || "");
-      text = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+      let text;
+      try {
+        text = await runModel(env, wanted, messages, max_tokens);
+      } catch (e1) {
+        // رجوع تلقائي إلى النموذج السريع إن تعذّر النموذج المطلوب
+        if (wanted !== DEFAULT_MODEL) {
+          text = await runModel(env, DEFAULT_MODEL, messages, max_tokens);
+        } else {
+          throw e1;
+        }
+      }
       return json({ content: [{ type: "text", text: text || "تعذّر توليد رد." }] });
     } catch (e) {
       return json(

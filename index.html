@@ -132,18 +132,41 @@ const GOSI_NOTE = `
 const FENCE = String.fromCharCode(96,96,96);
 const CV_CONTRACT = `
 
-بعد إتمام التقرير النصي الكامل، اكتب في آخر ردك كتلة بيانات JSON صالحة تمامًا تُستخدم للرسوم البيانية، بهذا الشكل الحرفي. كل القيم الرقمية أعداد صحيحة من 0 إلى 100، بلا فواصل زائدة، وبلا أي تعليق، ولا تكتب أي نص بعد الكتلة:
-${FENCE}hrjson
-{"type":"cv","jobTitle":"المسمى الوظيفي أو نص فارغ","candidates":[{"name":"اسم المرشح","overall":0,"fit":0,"recommendation":"مرشح قوي أو مرشح محتمل أو بحاجة لتحفظ أو غير مناسب","dimensions":{"الخبرة":0,"المهارات الفنية":0,"التعليم":0,"الإنجازات":0,"الاستقرار الوظيفي":0,"ملاءمة الدور":0},"strengths":["نقطة قوة"],"weaknesses":["نقطة ضعف أو مجال تطوير"],"risks":["مخاطرة أو مؤشر تحفظ"],"interviewFocus":["محور للتركيز في المقابلة"]}]}
-${FENCE}
-اجعل مفاتيح dimensions حرفيًا كما هي أعلاه. أدرج عنصرًا واحدًا في candidates لكل مرشح. اجعل overall متسقًا مع متوسط المحاور.`;
+في آخر ردك تمامًا وبعد كل التقرير، اكتب كتلة البيانات للرسوم البيانية بهذا الشكل الحرفي البسيط، أسطر مفتاح=قيمة فقط، أرقام صحيحة من 0 إلى 100، ولا تكتب أي حرف بعد <<<END>>>:
+<<<HRDATA>>>
+type=cv
+name=اسم المرشح
+overall=الدرجة الإجمالية
+recommendation=واحدة فقط من: توظيف مباشر | مقابلة | مقابلة بتحفظ | غير مناسب
+strength=نسبة قوة الترشيح من 100
+dim=كفاءات أساسية|درجة
+dim=كفاءات مشتركة|درجة
+dim=كفاءات تخصصية|درجة
+dim=الخبرة|درجة
+dim=الإنجازات|درجة
+dim=ملاءمة الدور|درجة
+<<<END>>>
+قواعد إلزامية: استخدم أسماء dim حرفيًا كما هي. ضع سطر dim لكل محور. اجعل strength قريبًا من overall. إن تعدد المرشحون فأضف سطر cand=الاسم|الدرجة لكل مرشح، واجعل محاور dim للمرشح الأقوى. لا تكتب أي حرف بعد <<<END>>>.`;
 const INT_CONTRACT = `
 
-بعد إتمام التقرير النصي الكامل، اكتب في آخر ردك كتلة بيانات JSON صالحة تمامًا تُستخدم للرسوم البيانية، بهذا الشكل الحرفي. كل القيم الرقمية أعداد صحيحة من 0 إلى 100، بلا فواصل زائدة، وبلا أي تعليق، ولا تكتب أي نص بعد الكتلة:
-${FENCE}hrjson
-{"type":"interview","candidate":"اسم المرشح أو نص فارغ","role":"الوظيفة أو نص فارغ","overall":0,"recommendation":"يوصى بالتقدم أو واعد بتحفظ أو غير مناسب","dimensions":{"الكفاءة الفنية":0,"حل المشكلات":0,"التواصل والوضوح":0,"الملاءمة الثقافية":0,"الدافعية":0,"الأدلة والأمثلة":0},"answers":[{"q":"ملخص قصير للسؤال","score":0,"verdict":"قوية أو متوسطة أو ضعيفة"}],"strengths":["نقطة قوة"],"concerns":["موضع ضعف أو قلق"],"redFlags":["مؤشر أحمر إن وجد"],"followUps":["سؤال متابعة مقترح"]}
-${FENCE}
-اجعل مفاتيح dimensions حرفيًا كما هي أعلاه، وأدرج عنصرًا في answers لكل سؤال رئيسي حللته.`;
+في آخر ردك تمامًا وبعد كل التقرير، اكتب كتلة البيانات للرسوم بهذا الشكل الحرفي البسيط، أسطر مفتاح=قيمة، أرقام من 0 إلى 100، ولا تكتب أي حرف بعد <<<END>>>:
+<<<HRDATA>>>
+type=interview
+candidate=اسم المرشح
+role=الدور
+overall=الدرجة الإجمالية
+recommendation=واحدة فقط من: يوصى بالتقدم | واعد بتحفظ | غير مناسب
+strength=نسبة الجاهزية من 100
+dim=الكفاءة الفنية|درجة
+dim=حل المشكلات|درجة
+dim=التواصل والوضوح|درجة
+dim=الملاءمة الثقافية|درجة
+dim=الدافعية|درجة
+dim=الأدلة والأمثلة|درجة
+ans=س1|درجة
+ans=س2|درجة
+<<<END>>>
+قواعد إلزامية: استخدم أسماء dim حرفيًا. أضف سطر ans لكل سؤال رئيسي حللته. لا تكتب أي حرف بعد <<<END>>>.`;
 
 const AGENTS = [
   { id:"law", name:"مستشار نظام العمل", role:"الامتثال والعقود والإنهاء", accent:"#2D5B8E", icon:IconScale,
@@ -154,27 +177,59 @@ const AGENTS = [
     intro:"أساعدك في الأوصاف الوظيفية، معايير الفرز، أسئلة المقابلات، وخطط السعودة ورفع مؤشر نطاقات. اربط مرفقًا للوصف الوظيفي أو سيرة لأبني عليها.",
     suggestions:["اكتب وصفًا وظيفيًا لمطور Backend في شركة فينتك","جهّز 8 أسئلة مقابلة سلوكية لدور أخصائي موارد بشرية","اقترح خطة لرفع نسبة السعودة في الإدارة"],
     system:`أنت "أخصائي التوظيف والاستقطاب والسعودة" ضمن فريق وكلاء الموارد البشرية. تساعد في الأوصاف الوظيفية الواقعية وغير المتحيزة، معايير الفرز، أسئلة المقابلات السلوكية والفنية مع معايير تقييم، خطط الإحلال والسعودة، وتحسين مؤشرات نطاقات. راعِ قطاع التقنية المالية، واربط توصياتك بأهداف العمل.${COMMON}` },
-  { id:"cv", name:"مفاضل السير الذاتية", role:"تحليل عميق وفرز وترتيب المرشحين", accent:"#0E7C86", icon:IconSearchDoc, intake:true,
-    intro:"ارفع السير الذاتية وأضف الوصف الوظيفي، وسأحللها بعمق وتوازن: درجات لكل جدارة، رسوم بيانية، نقاط قوة وضعف ومخاطر، ومقارنة وترتيب وتقرير توظيف نهائي.",
+  { id:"cv", name:"مفاضل السير الذاتية", role:"تحليل عميق وفرز وترتيب المرشحين", accent:"#0E7C86", icon:IconSearchDoc, intake:true, model:"@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    intro:"ارفع السيرة الذاتية وأضف الوصف الوظيفي (اختياري)، وسأحللها بعمق وتوازن: ملخص تنفيذي، كفاءات أساسية ومشتركة وتخصصية، رسوم بيانية، جدول تقييم، وتوصية بنسبة قوة.",
     suggestions:[],
-    system:`أنت "خبير تحليل وفرز ومفاضلة السير الذاتية" ضمن فريق وكلاء الموارد البشرية، تقدّم تحليلًا عميقًا ومتوازنًا وتقارير توظيف احترافية.
-منهجك إلزامي:
-- اقرأ كل سيرة بعناية واحكم بموضوعية تامة وعدالة: لا تتأثر بالاسم أو الجنس أو الجنسية أو العمر أو الصورة، واحكم فقط على المهارات والخبرات والإنجازات ومطابقتها للوصف الوظيفي.
-- لكل مرشح قدّم نظرة متوازنة للجانبين معًا: نقاط القوة الحقيقية، ونقاط الضعف ومجالات التطوير، والمخاطر ومؤشرات التحفظ مثل الفجوات الزمنية وكثرة التنقل والمبالغات والمعلومات الناقصة. حتى المرشح القوي اذكر فجواته، وحتى الضعيف اذكر أي إيجابيات لديه.
-- قيّم كل مرشح عبر هذه المحاور بدرجات من 100: الخبرة، المهارات الفنية، التعليم، الإنجازات، الاستقرار الوظيفي، ملاءمة الدور. واعطِ درجة إجمالية مع مبرر.
-- وضّح كل معلومة ناقصة بدل افتراضها، واقترح محاور التركيز في المقابلة لكل مرشح.
-- إذا تعدد المرشحون فأضف ترتيبًا تنازليًا وتوصية نهائية مسببة بأفضلهم.
-- نظّم تقريرًا واضحًا: لكل مرشح عنوان ثم تحليله، ثم خلاصة تنفيذية ومقارنة.${CV_CONTRACT}${COMMON}` },
-  { id:"interview", name:"محلل المقابلات", role:"تحليل إجابات المرشحين وتقييمها", accent:"#C2683A", icon:IconInterview, intake:true,
-    intro:"ألصق أسئلة المقابلة وإجابات المرشح أو ارفع تفريغ المقابلة، وسأحللها بعمق وتوازن: درجات لكل جدارة، رسوم بيانية، نقاط قوة ومواضع قلق ومؤشرات حمراء، وأسئلة متابعة وتوصية.",
+    system:`أنت "خبير تحليل ومفاضلة السير الذاتية" ضمن فريق وكلاء الموارد البشرية. تُنتج تقارير توظيف عميقة ودقيقة جدًا ومتوازنة ومبوّبة.
+
+مبادئ إلزامية:
+- احكم بموضوعية وعدالة تامة على المهارات والخبرات والإنجازات ومطابقتها للوظيفة فقط؛ لا تتأثر بالاسم أو الجنس أو الجنسية أو العمر أو الصورة.
+- انظر دائمًا إلى الجانبين معًا: نقاط القوة الحقيقية، ونقاط الضعف ومجالات التطوير، والمخاطر ومؤشرات التحفظ (فجوات زمنية، كثرة تنقل، مبالغات، معلومات ناقصة). حتى القوي اذكر فجواته، وحتى الضعيف اذكر إيجابياته.
+- وضّح كل معلومة ناقصة بدل افتراضها.
+- إن لم يُرفق وصف وظيفي ولا ملخص للوظيفة، فاستنبط الدور المناسب من السيرة نفسها واذكر ذلك صراحة، واجعل النسب عامة تقريبية مع الإشارة إلى أن دقتها أعلى عند توفر الوصف الوظيفي.
+
+اكتب التقرير بهذا الترتيب وبعناوين Markdown (## ) لكل قسم، بعمق وتفصيل لا باختصار:
+## ملخص تنفيذي
+4 إلى 6 أسطر: من المرشح، الحكم العام، أبرز قوة وأبرز خطر، والتوصية بجملة واحدة مع نسبة قوة الترشيح.
+## الكفاءات الأساسية
+التواصل، حل المشكلات، القيادة والعمل الجماعي، التكيّف. لكل كفاءة شاهد من السيرة ودرجة تقريبية ومواطن القوة والقصور.
+## الكفاءات المشتركة (المتقاطعة بين الفني والإداري وبين الإدارات)
+الكفاءات التي تربط الجانب الفني بالإداري أو تتقاطع مع إدارات أخرى حسب احتياج العمل، مع أمثلة من السيرة.
+## الكفاءات الفنية التخصصية البحتة
+العمق الفني التخصصي الخالص المرتبط بالدور: الأدوات والتقنيات والشهادات والمشاريع.
+## نقاط القوة ونقاط الضعف والمخاطر
+عدّد بوضوح: نقاط القوة، ثم نقاط الضعف ومجالات التطوير، ثم المخاطر ومؤشرات التحفظ.
+## محاور التركيز في المقابلة
+أسئلة ومحاور يجب التحقق منها في المقابلة لسد الفجوات.
+## جدول التقييم
+جدول Markdown بالأعمدة: | الجدارة | الدرجة /100 | الملاحظة | يغطي كل المحاور بصف لكل جدارة.
+## التوصية النهائية
+وضّح التوصية صراحة: "توظيف مباشر" إذا كان قويًا جدًا، أو "مقابلة"، أو "مقابلة بتحفظ"، أو "غير مناسب"؛ مع نسبة قوة الترشيح ومبرر مركّز. وإن تعدد المرشحون أضف ترتيبًا تنازليًا وأفضلهم. وإن لم يُرفق وصف وظيفي، أضف سطرًا يوصي برفع الوصف الوظيفي أو كتابة ملخص سريع للوظيفة ومهامها ومتطلباتها لرفع دقة النتائج، مع توضيح أن التحليل تمّ على أي حال.${CV_CONTRACT}${COMMON}` },
+  { id:"interview", name:"محلل المقابلات", role:"تحليل إجابات المرشحين وتقييمها", accent:"#C2683A", icon:IconInterview, intake:true, model:"@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    intro:"ألصق أسئلة المقابلة وإجابات المرشح أو ارفع تفريغ المقابلة، وسأحللها بعمق: ملخص تنفيذي، تقييم كل إجابة، رسوم بيانية، مؤشرات حمراء، وتوصية بنسبة جاهزية.",
     suggestions:[],
-    system:`أنت "محلل إجابات المقابلات الشخصية" ضمن فريق وكلاء الموارد البشرية، تقيّم أداء المرشح في المقابلة بعمق وتوازن وحياد.
-منهجك إلزامي:
-- حلّل إجابات المرشح إجابةً إجابة: ما الذي قيل فعلًا، وجودة المحتوى، ووضوح التواصل، وقوة الأدلة والأمثلة بمنهج STAR وهو الموقف والمهمة والإجراء والنتيجة، والاتساق والمصداقية الظاهرة.
-- قدّم نظرة متوازنة للجانبين: نقاط القوة الحقيقية، ومواضع الضعف والقلق، والمؤشرات الحمراء مثل التناقض والتهرب والإجابات السطحية والمبالغة والسلوك غير المهني. حتى المرشح القوي اذكر مواضع ضعفه، وحتى الضعيف اذكر إيجابياته.
-- قيّم عبر هذه الجدارات بدرجات من 100: الكفاءة الفنية، حل المشكلات، التواصل والوضوح، الملاءمة الثقافية، الدافعية، الأدلة والأمثلة. واعطِ درجة إجمالية وتوصية مسببة.
-- لا تفترض ما لم يُذكر، واقترح أسئلة متابعة لسد الفجوات. احكم على المحتوى لا على الشكل اللغوي وحده، والتزم العدالة وعدم التحيز.
-- نظّم التقرير: تقييم عام، ثم تحليل كل إجابة، ثم خلاصة متوازنة، ثم التوصية وأسئلة المتابعة.${INT_CONTRACT}${COMMON}` },
+    system:`أنت "محلل إجابات المقابلات الشخصية" ضمن فريق وكلاء الموارد البشرية، تقيّم أداء المرشح في المقابلة بعمق ودقة وتوازن وحياد.
+
+مبادئ إلزامية:
+- حلّل إجابات المرشح إجابةً إجابة بمنهج STAR (الموقف، المهمة، الإجراء، النتيجة): ما الذي قيل فعلًا، وجودة المحتوى، ووضوح التواصل، وقوة الأدلة والأمثلة، والاتساق والمصداقية الظاهرة.
+- قدّم نظرة متوازنة للجانبين: نقاط القوة الحقيقية، ومواضع الضعف والقلق، والمؤشرات الحمراء (تناقض، تهرّب، إجابات سطحية، مبالغة، سلوك غير مهني). حتى القوي اذكر مواضع ضعفه، وحتى الضعيف اذكر إيجابياته.
+- لا تفترض ما لم يُذكر. احكم على المحتوى لا على الشكل اللغوي وحده، والتزم العدالة وعدم التحيز.
+
+اكتب التقرير بهذا الترتيب وبعناوين Markdown (## ) لكل قسم، بعمق وتفصيل:
+## ملخص تنفيذي
+4 إلى 6 أسطر: الحكم العام على المرشح، أبرز قوة وأبرز قلق، والتوصية بجملة واحدة مع نسبة الجاهزية.
+## تقييم الإجابات إجابةً إجابة
+لكل سؤال رئيسي: ملخص الإجابة، تقييمها بمنهج STAR، حكم (قوية/متوسطة/ضعيفة)، ودرجة تقريبية.
+## ملف الجدارات
+تقييم الجدارات الست: الكفاءة الفنية، حل المشكلات، التواصل والوضوح، الملاءمة الثقافية، الدافعية، الأدلة والأمثلة، مع شاهد لكل منها.
+## القراءة المتوازنة
+نقاط القوة، ثم مواضع الضعف والقلق، ثم المؤشرات الحمراء إن وجدت.
+## أسئلة المتابعة المقترحة
+أسئلة تسد الفجوات وتتحقق من النقاط غير الواضحة.
+## جدول التقييم
+جدول Markdown بالأعمدة: | الجدارة | الدرجة /100 | الملاحظة | يغطي كل الجدارات.
+## التوصية النهائية
+وضّح التوصية صراحة: "يوصى بالتقدم" أو "واعد بتحفظ" أو "غير مناسب"؛ مع نسبة الجاهزية ومبرر مركّز.${INT_CONTRACT}${COMMON}` },
   { id:"relations", name:"أخصائي علاقات الموظفين", role:"التظلمات والانضباط والخطابات", accent:"#B7894A", icon:IconHeart,
     intro:"أتعامل مع الشكاوى والتظلمات والإجراءات التأديبية وخطابات الإنذار وحل النزاعات، موازنًا بين حقوق الموظف وحماية الشركة نظاميًا.",
     suggestions:["صِغ خطاب إنذار أول لتكرار التأخر عن الدوام","كيف أتعامل مع تظلم موظف بشكل عادل ونظامي؟","اكتب محضر اجتماع لمناقشة مخالفة سلوكية"],
@@ -319,56 +374,74 @@ function CandidateBlock({c,accent}){
     <PillList title="محاور التركيز في المقابلة" items={c.interviewFocus} color="#2D5B8E"/>
   </div>);
 }
+function recColor(rec,val){
+  const r=(rec||"").toString();
+  if(/توظيف مباشر|يوصى بالتقدم/.test(r)) return "#1A6B52";
+  if(/غير مناسب/.test(r)) return "#C0492F";
+  if(/تحفظ|واعد/.test(r)) return "#C98A2B";
+  return band(val);
+}
+function RecCard({data}){
+  const val=Number(data.overall)||0;
+  const col=recColor(data.recommendation,val);
+  const strength=(data.strength!=null&&data.strength!=="")?Math.round(Number(data.strength)||0):Math.round(val);
+  return (<div style={{border:`1px solid ${T.border}`,borderRadius:14,padding:14,background:"#fff",marginBottom:12,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+    <ScoreRing value={val} size={86}/>
+    <div style={{flex:1,minWidth:160}}>
+      {(data.name||data.candidate)&&<div style={{fontSize:16,fontWeight:800,color:T.ink}}>{data.name||data.candidate}</div>}
+      {(data.role||data.jobtitle)&&<div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{data.role||data.jobtitle}</div>}
+      {data.recommendation&&<div style={{marginTop:8,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <span style={{display:"inline-block",fontSize:13,fontWeight:800,color:col,background:hexToRgba(col,.12),border:`1px solid ${hexToRgba(col,.5)}`,borderRadius:999,padding:"4px 14px"}}>{data.recommendation}</span>
+        <span style={{fontSize:13,fontWeight:700,color:col}}>قوة الترشيح: {strength}%</span>
+      </div>}
+    </div>
+  </div>);
+}
 function ReportView({data,accent}){
   try{
     if(!data) return null;
-    if(data.type==="interview" || (data.dimensions && !data.candidates)){
-      const dims=dimsToArr(data.dimensions);
-      const ans=(data.answers||[]).map((a,i)=>({label:"س"+(i+1),value:Number(a.score)||0}));
+    const dims=data.dims||[];
+    if(data.type==="interview"){
+      const ans=data.ans||[];
       return (<div style={{marginBottom:2}}>
-        <Card title="التقييم العام">
-          <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
-            <ScoreRing value={data.overall} size={86}/>
-            <div style={{flex:1,minWidth:150}}>
-              {data.candidate&&<div style={{fontSize:15,fontWeight:800,color:T.ink}}>{data.candidate}</div>}
-              {data.role&&<div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{data.role}</div>}
-              {data.recommendation&&<div style={{marginTop:8}}><RecBadge text={data.recommendation} value={data.overall}/></div>}
-            </div>
-          </div>
-        </Card>
+        <RecCard data={data}/>
         {dims.length>=3&&<Card title="ملف الجدارات"><ChartPair dims={dims} accent={accent}/></Card>}
         {ans.length>0&&<Card title="جودة الإجابات"><ScoreBars data={ans}/></Card>}
-        {(data.strengths||data.concerns||data.redFlags||data.followUps)&&<Card title="القراءة المتوازنة">
-          <PillList title="نقاط القوة" items={data.strengths} color="#1A6B52"/>
-          <PillList title="مواضع الضعف والقلق" items={data.concerns} color="#C98A2B"/>
-          <PillList title="مؤشرات حمراء" items={data.redFlags} color="#C0492F"/>
-          <PillList title="أسئلة متابعة مقترحة" items={data.followUps} color="#2D5B8E"/>
-        </Card>}
       </div>);
     }
-    const cands=data.candidates||[];
-    if(!cands.length) return null;
+    const cands=data.cands||[];
     return (<div style={{marginBottom:2}}>
+      <RecCard data={data}/>
+      {dims.length>=3&&<Card title="ملف الجدارات"><ChartPair dims={dims} accent={accent}/></Card>}
       {cands.length>1&&<Card title="المقارنة والترتيب"><CompareBars candidates={cands}/></Card>}
-      {cands.map((c,i)=><CandidateBlock key={i} c={c} accent={accent}/>)}
     </div>);
   }catch(e){ return null; }
 }
-function tryParse(s){
-  if(!s) return null;
-  const cleaned=s.replace(/,\s*([}\]])/g,"$1");
-  for(const v of [s,cleaned]){ try{ return JSON.parse(v); }catch(e){} }
-  const i=s.indexOf("{"), j=s.lastIndexOf("}");
-  if(i>=0&&j>i){ try{ return JSON.parse(s.slice(i,j+1).replace(/,\s*([}\]])/g,"$1")); }catch(e){} }
-  return null;
+function parseHRData(text){
+  if(!text) return null;
+  const m=text.match(/<<<HRDATA>>>([\s\S]*?)<<<END>>>/i);
+  if(!m) return null;
+  const d={dims:[],ans:[],cands:[]};
+  m[1].split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    const eq=t.indexOf("="); if(eq<0) return;
+    const k=t.slice(0,eq).trim().toLowerCase(); const v=t.slice(eq+1).trim();
+    const clamp=x=>Math.max(0,Math.min(100,parseInt(x,10)||0));
+    if(k==="dim"){ const p=v.split("|"); if(p[0]&&p[0].trim()) d.dims.push({axis:p[0].trim(),label:p[0].trim(),value:clamp(p[1])}); }
+    else if(k==="ans"){ const p=v.split("|"); if(p[0]&&p[0].trim()) d.ans.push({label:p[0].trim(),value:clamp(p[1])}); }
+    else if(k==="cand"){ const p=v.split("|"); if(p[0]&&p[0].trim()) d.cands.push({name:p[0].trim(),overall:clamp(p[1])}); }
+    else if(k==="overall"||k==="strength") d[k]=clamp(v);
+    else d[k]=v;
+  });
+  if(!d.type) d.type=(d.candidate||d.role||d.ans.length)?"interview":"cv";
+  return (d.dims.length||d.ans.length||d.overall!=null||d.recommendation)?d:null;
+}
+function stripBlocks(text){
+  return text.replace(/<<<HRDATA>>>[\s\S]*?<<<END>>>/ig,"").replace(/```(?:hrjson|json)?[\s\S]*?```/gi,b=>/(HRDATA|"type"|candidates|dimensions)/.test(b)?"":b).trim();
 }
 function parseReport(text){
   if(!text) return {data:null,prose:""};
-  const reg=/```(?:hrjson|json)?\s*([\s\S]*?)```/gi;
-  let m,target=null;
-  while((m=reg.exec(text))!==null){ if(/(type|candidates|dimensions)/.test(m[1]||"")) target={raw:m[0],body:m[1]}; }
-  if(!target) return {data:null,prose:text};
-  return {data:tryParse(target.body.trim()), prose:text.replace(target.raw,"").trim()};
+  return {data:parseHRData(text), prose:stripBlocks(text)};
 }
 function AssistantBody({content,accent}){
   const {data,prose}=parseReport(content);
@@ -429,9 +502,10 @@ function sanitize(messages){
     return {role:m.role,content:m.content};
   });
 }
-async function callAI(system,messages){
+async function callAI(system,messages,modelOverride){
   const cfg=getConfig();
-  const payload={model:cfg.model,max_tokens:4096,system,messages:sanitize(messages)};
+  const useModel=(cfg.worker&&modelOverride)?modelOverride:cfg.model;
+  const payload={model:useModel,max_tokens:4096,system,messages:sanitize(messages)};
   let res;
   if(cfg.worker){
     const headers={"content-type":"application/json"};
@@ -554,7 +628,7 @@ function App(){
     setConversations(p=>({...p,[activeId]:next}));
     setInput(""); setPending([]); resetTa();
     try{
-      const reply=await callAI(agent.system,next);
+      const reply=await callAI(agent.system,next,agent.model);
       setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
     }catch(e){ setError(errMsg(e)); }
     finally{ setLoading(false); }
@@ -573,14 +647,17 @@ function App(){
     const ready=cvFiles.filter(c=>c.status==="done"&&c.text);
     if(ready.length===0||loading) return;
     setLoading(true); setError(null);
-    let txt=`الوصف الوظيفي:\n${jobDesc.trim()||"(لم يُحدد وصف وظيفي. استخرج معايير التقييم من السير نفسها واذكر ذلك.)"}\n\nعدد المرشحين: ${ready.length}\n`;
+    const hasJd=!!jobDesc.trim();
+    let txt=hasJd
+      ? `الوصف الوظيفي أو ملخص الوظيفة:\n${jobDesc.trim()}\n\nعدد المرشحين: ${ready.length}\n`
+      : `لم يُرفق وصف وظيفي ولا ملخص للوظيفة. استنبط الدور المناسب من السيرة نفسها واذكر ذلك صراحة، واجعل النسب عامة تقريبية، وأضف في التوصية سطرًا يوصي برفع الوصف الوظيفي أو كتابة ملخص سريع للوظيفة ومهامها لرفع دقة النتائج.\n\nعدد المرشحين: ${ready.length}\n`;
     ready.forEach((c,i)=>{ txt+=`\n===== المرشح ${i+1}: ${c.name} =====\n${c.text}\n`; });
-    txt+=`\n\nالمطلوب: حلّل السير وفاضل بين المرشحين بموضوعية وعدالة وبعمق وتوازن. لكل مرشح: درجة من 100 لكل جدارة ودرجة إجمالية، ونقاط القوة، ونقاط الضعف ومجالات التطوير، والمخاطر، ومحاور التركيز في المقابلة، وتوصية. ثم مقارنة وترتيب تنازلي وتوصية نهائية مسببة. ثم أضف كتلة البيانات المنظمة في النهاية.`;
+    txt+=`\n\nالمطلوب: حلّل بعمق وتوازن ودقة عالية والتزم بالأقسام والترتيب وجدول التقييم والتوصية بنسبة قوة كما في تعليماتك، ثم اكتب كتلة <<<HRDATA>>> في النهاية.`;
     const userMsg={id:uid(),role:"user",content:txt,display:`مفاضلة ${ready.length} مرشحين${jobDesc.trim()?" حسب الوصف الوظيفي":""}`,atts:ready.map(c=>c.name)};
     const next=[userMsg];
     setConversations(p=>({...p,[activeId]:next}));
     try{
-      const reply=await callAI(agent.system,next);
+      const reply=await callAI(agent.system,next,agent.model);
       setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
     }catch(e){ setError(errMsg(e)); }
     finally{ setLoading(false); }
@@ -593,12 +670,12 @@ function App(){
     let txt=`الوظيفة أو الدور: ${intRole.trim()||"(غير محدد)"}\n\nأسئلة المقابلة وإجابات المرشح:\n`;
     if(pasted) txt+=pasted+"\n";
     ready.forEach((c,i)=>{ txt+=`\n===== تفريغ مرفق ${i+1}: ${c.name} =====\n${c.text}\n`; });
-    txt+=`\n\nالمطلوب: حلّل أداء المرشح في المقابلة بعمق وتوازن، إجابةً إجابة، مع درجات لكل جدارة، ونقاط القوة ومواضع الضعف والمؤشرات الحمراء، وأسئلة متابعة وتوصية نهائية. ثم أضف كتلة البيانات المنظمة في النهاية.`;
+    txt+=`\n\nالمطلوب: حلّل بعمق ودقة عالية والتزم بالأقسام والترتيب وجدول التقييم والتوصية بنسبة الجاهزية كما في تعليماتك، ثم اكتب كتلة <<<HRDATA>>> في النهاية.`;
     const userMsg={id:uid(),role:"user",content:txt,display:`تحليل مقابلة${intRole.trim()?" لدور "+intRole.trim():""}`,atts:ready.map(c=>c.name)};
     const next=[userMsg];
     setConversations(p=>({...p,[activeId]:next}));
     try{
-      const reply=await callAI(agent.system,next);
+      const reply=await callAI(agent.system,next,agent.model);
       setConversations(p=>({...p,[activeId]:[...next,{id:uid(),role:"assistant",content:reply,display:reply,atts:[]}]}));
     }catch(e){ setError(errMsg(e)); }
     finally{ setLoading(false); }
@@ -707,7 +784,7 @@ function App(){
         <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:700,fontSize:21,color:T.ink}}>{agent.name}</div>
         <div style={{color:T.muted,fontSize:14,lineHeight:1.8,marginTop:6,maxWidth:560,marginInline:"auto"}}>{agent.intro}</div>
       </div>
-      <label style={{fontSize:13,fontWeight:600,color:T.ink}}>الوصف الوظيفي (اختياري، يحسّن دقة المفاضلة)</label>
+      <label style={{fontSize:13,fontWeight:600,color:T.ink}}>الوصف الوظيفي أو ملخص سريع للمهام والمتطلبات (اختياري، يرفع دقة النتائج)</label>
       <textarea value={jobDesc} onChange={e=>setJobDesc(e.target.value)} placeholder="الصق هنا الوصف الوظيفي والمتطلبات والمؤهلات..." style={{width:"100%",marginTop:6,minHeight:88,resize:"vertical",border:`1px solid ${T.border}`,borderRadius:12,padding:"11px 13px",fontSize:14,lineHeight:1.7,background:"#FBFCFB",color:T.ink}}/>
       <div onClick={()=>cvRef.current&&cvRef.current.click()} onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);addCvs(e.dataTransfer.files);}}
         style={{marginTop:14,border:`1.5px dashed ${dragOver?agent.accent:T.border}`,background:dragOver?hexToRgba(agent.accent,.06):"#FBFCFB",borderRadius:14,padding:"24px 16px",textAlign:"center",cursor:"pointer"}}>
