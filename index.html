@@ -219,11 +219,12 @@ const DOCS_TEMPLATES = `
 فريق إدارة الموارد البشرية
 `;
 
+const CALC_RULE=`\n\n— الحساب الرقمي الحتمي —\nعند طلب حساب رقمي لمكافأة نهاية الخدمة أو التسوية النهائية أو التأمينات (GOSI)، ومتى توفّرت المدخلات اللازمة، لا تحسب الأرقام بنفسك إطلاقًا. أصدر في بداية ردك هذه الكتلة فقط لتتولى اللوحة الحساب بالكود:\n<<<CALC>>>\ntype=settlement\nwage=الأجر الشهري الشامل رقمًا\nyears=سنوات الخدمة رقمًا\ncause=أحد المعرّفات: employer | expiry | mutual | art81 | retire | force | resign | art80\nleaveDays=أيام رصيد الإجازات إن ذُكرت وإلا 0\nnoticeDays=أيام بدل الإشعار إن ذُكرت وإلا 0\nunpaid=أجور متأخرة إن ذُكرت وإلا 0\n<<<END>>>\nوللتأمينات استخدم type=gosi مع wage و saudi=true أو false. للإنهاء غير المشروع أضف wrongful=true و contractType=fixed أو indef و remainingMonths عند العقد المحدد.\nالمدخلات الضرورية: للتسوية الأجر وسنوات الخدمة والسبب؛ للتأمينات الأجر والجنسية. إن نقص أي منها فاطلبه من المستخدم ولا تُصدر الكتلة. لا تكتب أي رقم ناتج بنفسك؛ بعد الكتلة اكتب شرحًا نظاميًا موجزًا بلا أرقام تحسبها.`;
 const AGENTS = [
   { id:"law", name:"مستشار نظام العمل", role:"الامتثال والعقود والإنهاء", accent:"#2D5B8E", icon:IconScale,
     intro:"اسألني عن أي مسألة نظامية في علاقات العمل: العقود، الإنهاء، الاستقالة، الإجازات، ومكافأة نهاية الخدمة. أسند رأيي بالمواد وأوضّح المخاطر والبدائل المشروعة.",
     suggestions:["ما الفرق بين الإنهاء بموجب م77 وم81؟","احسب مكافأة نهاية الخدمة لموظف خدمته 7 سنوات","صِغ بنود فترة تجربة سليمة نظاميًا"],
-    system:`أنت "مستشار نظام العمل والامتثال" ضمن فريق وكلاء الموارد البشرية. تخصصك نظام العمل السعودي ولوائحه: العقود، الإنهاء والاستقالة، مكافأة نهاية الخدمة، الإجازات، ساعات العمل، نطاقات السعودة، والتأمينات من الزاوية النظامية. قدّم رأيًا نظاميًا دقيقًا مسنودًا بالمواد مع توضيح المخاطر والبدائل المشروعة. لا تقترح أي صياغة مضللة أو التفافًا على النظام. اعرض خطوات أي حساب بوضوح. قاعدة صارمة: لا تستشهد بأي رقم مادة أو نسبة غير وارد في المرجع المضمّن أدناه. إن سُئلت عن مادة أو نسبة غير موجودة في المرجع فاذكر بوضوح أنك بحاجة للرجوع إلى النص الرسمي للنظام (المرسوم م/44) ولا تخمّن رقم المادة أو مضمونها إطلاقًا. تاريخ اليوم: ${TODAY}.${LAW_FACTS}${COMMON}` },
+    system:`أنت "مستشار نظام العمل والامتثال" ضمن فريق وكلاء الموارد البشرية. تخصصك نظام العمل السعودي ولوائحه: العقود، الإنهاء والاستقالة، مكافأة نهاية الخدمة، الإجازات، ساعات العمل، نطاقات السعودة، والتأمينات من الزاوية النظامية. قدّم رأيًا نظاميًا دقيقًا مسنودًا بالمواد مع توضيح المخاطر والبدائل المشروعة. لا تقترح أي صياغة مضللة أو التفافًا على النظام. اعرض خطوات أي حساب بوضوح. قاعدة صارمة: لا تستشهد بأي رقم مادة أو نسبة غير وارد في المرجع المضمّن أدناه. إن سُئلت عن مادة أو نسبة غير موجودة في المرجع فاذكر بوضوح أنك بحاجة للرجوع إلى النص الرسمي للنظام (المرسوم م/44) ولا تخمّن رقم المادة أو مضمونها إطلاقًا. تاريخ اليوم: ${TODAY}.${LAW_FACTS}${CALC_RULE}${COMMON}` },
   { id:"recruit", name:"أخصائي التوظيف والسعودة", role:"الاستقطاب والمقابلات ونطاقات", accent:"#1A6B52", icon:IconUserPlus,
     intro:"أساعدك في الأوصاف الوظيفية، معايير الفرز، أسئلة المقابلات، وخطط السعودة ورفع مؤشر نطاقات. اربط مرفقًا للوصف الوظيفي أو سيرة لأبني عليها.",
     suggestions:["اكتب وصفًا وظيفيًا لمطور Backend في شركة فينتك","جهّز 8 أسئلة مقابلة سلوكية لدور أخصائي موارد بشرية","اقترح خطة لرفع نسبة السعودة في الإدارة"],
@@ -296,7 +297,7 @@ const AGENTS = [
   { id:"comp", name:"أخصائي التعويضات والمزايا", role:"الرواتب والتأمينات والحوافز", accent:"#6A4E93", icon:IconWallet,
     intro:"أساعدك في هيكلة الرواتب والدرجات والنطاقات، المقارنات المعيارية، حساب التأمينات ومكافأة نهاية الخدمة، وتصميم خطط الحوافز والعمولات، مع عرض الحسابات خطوة بخطوة.",
     suggestions:["احسب مكوّنات راتب لموظف أساسي 12000 وبدل سكن 3000","صمّم هيكل عمولات لفريق المبيعات","قارن راتب أخصائي موارد بشرية بمستوى السوق السعودي"],
-    system:`أنت "أخصائي التعويضات والمزايا" ضمن فريق وكلاء الموارد البشرية. تساعد في هيكلة الرواتب والدرجات والنطاقات، المقارنات المعيارية، حساب التأمينات ومكافأة نهاية الخدمة، خطط الحوافز والعمولات، والمزايا التأمينية. اعرض الحسابات خطوة بخطوة مع الافتراضات، واطلب التحقق من أي رقم متغير من المصدر الرسمي للسنة الحالية.${LAW_FACTS}${GOSI_NOTE}${COMMON}` },
+    system:`أنت "أخصائي التعويضات والمزايا" ضمن فريق وكلاء الموارد البشرية. تساعد في هيكلة الرواتب والدرجات والنطاقات، المقارنات المعيارية، حساب التأمينات ومكافأة نهاية الخدمة، خطط الحوافز والعمولات، والمزايا التأمينية. اعرض الحسابات خطوة بخطوة مع الافتراضات، واطلب التحقق من أي رقم متغير من المصدر الرسمي للسنة الحالية.${LAW_FACTS}${GOSI_NOTE}${CALC_RULE}${COMMON}` },
   { id:"analytics", name:"محلل الموارد البشرية", role:"المؤشرات والتحليل والتخطيط", accent:"#2F8C8C", icon:IconChart,
     intro:"أعرّف وأحسب مؤشرات الأداء (الدوران، الاستبقاء، الغياب، وقت الإحلال، تكلفة التوظيف)، وأحلّل القوى العاملة، وأشرح معادلة كل مؤشر وكيفية عرضه.",
     suggestions:["ما معادلة معدل دوران الموظفين وكيف أفسره؟","اقترح 8 مؤشرات لقياس صحة إدارة الموارد البشرية","صمّم إطار لوحة معلومات شهرية للموارد البشرية"],
@@ -532,7 +533,7 @@ function parseHRData(text){
   return (d.dims.length||d.ans.length||d.overall!=null||d.recommendation)?d:null;
 }
 function stripBlocks(text){
-  return text.replace(/<<<HRDATA>>>[\s\S]*?<<<END>>>/ig,"").replace(/```(?:hrjson|json)?[\s\S]*?```/gi,b=>/(HRDATA|"type"|candidates|dimensions)/.test(b)?"":b).trim();
+  return text.replace(/<<<HRDATA>>>[\s\S]*?<<<END>>>/ig,"").replace(/<<<CALC>>>[\s\S]*?<<<END>>>/ig,"").replace(/```(?:hrjson|json)?[\s\S]*?```/gi,b=>/(HRDATA|"type"|candidates|dimensions)/.test(b)?"":b).trim();
 }
 function parseReport(text){
   if(!text) return {data:null,prose:""};
@@ -578,8 +579,209 @@ dim=الأدلة والأمثلة|درجة
     return reply;
   }catch(e){ return reply; }
 }
+/* ===== محرّك الحساب الحتمي في البنية (يحسب بالكود لا بالنموذج) ===== */
+const fmtSAR=n=>{ n=Number(n)||0; return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const GOSI_CAP=45000;
+const HRCALC={
+  causes:[
+    {id:"employer", label:"إنهاء من صاحب العمل (غير م80)"},
+    {id:"expiry",   label:"انتهاء عقد محدد المدة"},
+    {id:"mutual",   label:"إنهاء بالتراضي (م74)"},
+    {id:"art81",    label:"ترك العمل وفق م81 (مخالفة صاحب العمل)"},
+    {id:"retire",   label:"تقاعد"},
+    {id:"force",    label:"قوة قاهرة"},
+    {id:"resign",   label:"استقالة عادية"},
+    {id:"art80",    label:"فصل بسبب مشروع (م80)"},
+  ],
+  causeLabel(id){ const c=this.causes.find(x=>x.id===id); return c?c.label:id; },
+  eosRate(causeId, years){
+    if(causeId==="art80") return 0;
+    if(["employer","expiry","mutual","art81","retire","force"].includes(causeId)) return 1;
+    if(causeId==="resign"){
+      if(years<2) return 0;
+      if(years<5) return 1/3;
+      if(years<10) return 2/3;
+      return 1;
+    }
+    return 1;
+  },
+  eos(wage, years, causeId){
+    wage=Number(wage)||0; years=Number(years)||0;
+    const first=Math.min(years,5), after=Math.max(0,years-5);
+    const full=wage*(0.5*first + 1*after);
+    const rate=this.eosRate(causeId,years);
+    return { full, rate, entitled: full*rate, first, after };
+  },
+  gosi(wage, saudi, empRate, erRate){
+    wage=Number(wage)||0;
+    const base=Math.min(wage,GOSI_CAP);
+    const er = empRate!=null&&empRate!==""?Number(empRate):(saudi?9.75:0);
+    const cr = erRate!=null&&erRate!==""?Number(erRate):(saudi?11.75:2);
+    const empDed=base*er/100, erCon=base*cr/100;
+    return { base, empRate:er, erRate:cr, empDed, erCon, net: wage-empDed, capped: wage>GOSI_CAP };
+  },
+  settlementReport(inp){
+    const wage=Number(inp.wage)||0;
+    const years=Number(inp.years)||0;
+    const dayVal=wage/30;
+    const e=this.eos(wage, years, inp.causeId);
+    const leaveDays=Number(inp.leaveDays)||0;
+    const leavePay=leaveDays*dayVal;
+    const noticeDays=Number(inp.noticeDays)||0;
+    const noticePay=noticeDays*dayVal;
+    const unpaid=Number(inp.unpaid)||0;
+    let comp77=0, comp77label="";
+    const wrongful = inp.wrongful && inp.causeId==="employer";
+    if(wrongful){
+      if(inp.contractType==="fixed"){
+        comp77=(Number(inp.remainingMonths)||0)*wage;
+        comp77label="تعويض الإنهاء غير المشروع (م77 محدد المدة: أجر المدة المتبقية)";
+      } else {
+        comp77=Math.max(2*wage, 0.5*wage*years);
+        comp77label="تعويض الإنهاء غير المشروع (م77 غير محدد: 15 يومًا/سنة بحد أدنى شهرين)";
+      }
+    }
+    const total=unpaid+leavePay+e.entitled+noticePay+comp77;
+    const rows=[];
+    if(unpaid>0) rows.push(`| الأجور المتأخرة | مبلغ مُدخل | ${fmtSAR(unpaid)} |`);
+    if(leaveDays>0) rows.push(`| بدل رصيد الإجازات | ${leaveDays} يوم × ${fmtSAR(dayVal)} | ${fmtSAR(leavePay)} |`);
+    rows.push(`| مكافأة نهاية الخدمة | كاملة ${fmtSAR(e.full)} × ${(e.rate*100).toFixed(2)}% | ${fmtSAR(e.entitled)} |`);
+    if(noticeDays>0) rows.push(`| بدل الإشعار | ${noticeDays} يوم × ${fmtSAR(dayVal)} | ${fmtSAR(noticePay)} |`);
+    if(comp77>0) rows.push(`| تعويض م77 | ${inp.contractType==="fixed"?(Number(inp.remainingMonths)||0)+" شهر متبقٍ":"بحد أدنى شهرين"} | ${fmtSAR(comp77)} |`);
+    const md=[
+      "## حساب آلي للتسوية النهائية",
+      "حساب حتمي بالكود وفق نظام العمل (م/44). الأرقام محسوبة بالكود لا يولّدها النموذج اللغوي.",
+      "",
+      `السبب: ${this.causeLabel(inp.causeId)} | الأجر الشهري الشامل: ${fmtSAR(wage)} ريال | سنوات الخدمة: ${years}`,
+      "",
+      "| البند | التفصيل | المبلغ (ريال) |",
+      "|---|---|---|",
+      ...rows,
+      `| الإجمالي المستحق | | ${fmtSAR(total)} |`,
+      "",
+      "### تفصيل مكافأة نهاية الخدمة (م84)",
+      `- أول 5 سنوات: نصف شهر × ${e.first} سنة = ${fmtSAR(wage*0.5*e.first)} ريال`,
+      `- ما بعد 5 سنوات: شهر × ${e.after} سنة = ${fmtSAR(wage*e.after)} ريال`,
+      `- المكافأة الكاملة: ${fmtSAR(e.full)} ريال`,
+      `- نسبة الاستحقاق (م85): ${(e.rate*100).toFixed(2)}%`,
+      `- المستحق الفعلي: ${fmtSAR(e.entitled)} ريال`,
+      "",
+      "### ملاحظات",
+      "- قيمة يوم الإجازة على أساس الأجر الإجمالي ÷ 30.",
+      (inp.causeId==="art81"?"- ترك العمل وفق م81: لا يُضاف تعويض م77، وتُصرف المكافأة كاملة.":null),
+      (inp.causeId==="art80"?"- الفصل بسبب مشروع (م80): لا تُستحق مكافأة نهاية الخدمة.":null),
+      (inp.causeId==="resign"?"- الاستقالة العادية: النسبة بحسب مدة الخدمة (أقل من سنتين 0%، 2-5 الثلث، 5-10 الثلثان، 10 فأكثر كاملة).":null),
+      "- هذا حساب استرشادي؛ راجع الأرقام قبل الاعتماد الرسمي.",
+    ].filter(Boolean).join("\n");
+    return md;
+  },
+  gosiReport(inp){
+    const wage=Number(inp.wage)||0;
+    const g=this.gosi(wage, inp.saudi, inp.empRate, inp.erRate);
+    const md=[
+      "## حساب التأمينات الاجتماعية (GOSI)",
+      "حساب حتمي بالكود. النسب المعروضة افتراضية وقابلة للتعديل؛ تحقّق من النسب الرسمية للسنة الحالية قبل الاعتماد.",
+      "",
+      `الجنسية: ${inp.saudi?"سعودي":"غير سعودي"} | الأجر الخاضع المُدخل: ${fmtSAR(wage)} ريال`,
+      "",
+      "| البند | النسبة | المبلغ (ريال) |",
+      "|---|---|---|",
+      `| الأجر الخاضع (بحد أقصى ${fmtSAR(GOSI_CAP)}) | | ${fmtSAR(g.base)} |`,
+      `| حصة الموظف | ${g.empRate}% | ${fmtSAR(g.empDed)} |`,
+      `| حصة صاحب العمل | ${g.erRate}% | ${fmtSAR(g.erCon)} |`,
+      `| صافي الأجر بعد خصم حصة الموظف | | ${fmtSAR(g.net)} |`,
+      "",
+      "### ملاحظات",
+      `- السقف التأميني ${fmtSAR(GOSI_CAP)} ريال؛ ما فوقه لا يُحتسب عليه اشتراك.`,
+      (g.capped?"- الأجر يتجاوز السقف، فاحتُسب الاشتراك على 45,000 ريال.":null),
+      "- للسعودي افتراضيًا: الموظف 9.75% وصاحب العمل 11.75%. لغير السعودي: الأخطار المهنية 2% على صاحب العمل فقط.",
+    ].filter(Boolean).join("\n");
+    return md;
+  },
+};
+/* ===== التقاط الحساب وتشغيله بالكود داخل مجرى المحادثة (بلا واجهة منفصلة) ===== */
+const AR_DIGITS={ "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9","٫":".","،":"," };
+function normNum(s){
+  if(s==null) return "";
+  let t=String(s).replace(/[٠-٩٫،]/g,c=>AR_DIGITS[c]||c);
+  t=t.replace(/[,\s]/g,"").replace(/[^\d.\-]/g,"");
+  return t;
+}
+const CAUSE_IDS=["employer","expiry","mutual","art81","retire","force","resign","art80"];
+const CAUSE_SYN=[
+  ["art81","art81"],["م81","art81"],["81","art81"],
+  ["art80","art80"],["م80","art80"],["80","art80"],
+  ["resign","resign"],["استقال","resign"],
+  ["retire","retire"],["تقاعد","retire"],
+  ["mutual","mutual"],["تراض","mutual"],["م74","mutual"],
+  ["expiry","expiry"],["انتهاء","expiry"],
+  ["force","force"],["قاهرة","force"],
+  ["employer","employer"],["صاحب العمل","employer"],["إنهاء","employer"],["انهاء","employer"],
+];
+function normCause(v){
+  if(!v) return "employer";
+  const t=String(v).trim().toLowerCase();
+  if(CAUSE_IDS.includes(t)) return t;
+  for(let i=0;i<CAUSE_SYN.length;i++){ if(t.indexOf(CAUSE_SYN[i][0].toLowerCase())>=0) return CAUSE_SYN[i][1]; }
+  return "employer";
+}
+function parseCalcBlock(blk){
+  const m=blk.match(/<<<CALC>>>([\s\S]*?)<<<END>>>/i);
+  if(!m) return null;
+  const o={};
+  m[1].split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    const eq=t.indexOf("="); if(eq<0) return;
+    o[t.slice(0,eq).trim().toLowerCase()]=t.slice(eq+1).trim();
+  });
+  return o;
+}
+function calcMarkdown(o){
+  const type=(o.type||"settlement").toLowerCase();
+  if(type==="gosi"){
+    const saudi=/^(true|1|نعم|سعودي)/i.test(String(o.saudi||"true"));
+    const inp={ wage:Number(normNum(o.wage))||0, saudi, empRate:o.emprate?normNum(o.emprate):"", erRate:o.errate?normNum(o.errate):"" };
+    const echo=`> **المدخلات المفهومة:** الأجر ${fmtSAR(inp.wage)} ريال | ${saudi?"سعودي":"غير سعودي"} — راجعها، وإن كانت خاطئة صحّحها وأعد الطلب.\n\n`;
+    return echo+HRCALC.gosiReport(inp);
+  }
+  const inp={
+    wage:Number(normNum(o.wage))||0,
+    years:Number(normNum(o.years))||0,
+    causeId:normCause(o.cause||o.causeid),
+    leaveDays:Number(normNum(o.leavedays))||0,
+    noticeDays:Number(normNum(o.noticedays))||0,
+    unpaid:Number(normNum(o.unpaid))||0,
+    wrongful:/^(true|1|نعم)/i.test(String(o.wrongful||"")),
+    contractType:/(fixed|محدد)/i.test(String(o.contracttype||""))?"fixed":"indef",
+    remainingMonths:Number(normNum(o.remainingmonths))||0,
+  };
+  const extra=[
+    inp.leaveDays?`إجازات ${inp.leaveDays} يوم`:null,
+    inp.noticeDays?`إشعار ${inp.noticeDays} يوم`:null,
+    inp.unpaid?`متأخرات ${fmtSAR(inp.unpaid)}`:null,
+  ].filter(Boolean).join(" | ");
+  const echo=`> **المدخلات المفهومة:** الأجر ${fmtSAR(inp.wage)} ريال | الخدمة ${inp.years} سنة | السبب: ${HRCALC.causeLabel(inp.causeId)}${extra?" | "+extra:""}\n> راجع هذه المدخلات؛ إن كانت خاطئة صحّحها وأعد الطلب.\n\n`;
+  return echo+HRCALC.settlementReport(inp);
+}
+function applyCalc(text){
+  if(!text || text.indexOf("<<<CALC>>>")<0) return text;
+  return text.replace(/<<<CALC>>>[\s\S]*?<<<END>>>/ig, blk=>{
+    try{
+      const o=parseCalcBlock(blk); if(!o) return "";
+      const type=(o.type||"settlement").toLowerCase();
+      const wage=Number(normNum(o.wage))||0;
+      if(!wage) return "\n> تعذّر الحساب الآلي: الأجر الشهري مطلوب — زوّدني به.\n";
+      if(type!=="gosi"){
+        const yrs=(o.years==null?"":String(o.years).trim());
+        if(yrs==="") return "\n> تعذّر الحساب الآلي: سنوات الخدمة مطلوبة — زوّدني بها.\n";
+      }
+      return "\n"+calcMarkdown(o)+"\n";
+    }catch(e){ return "\n> تعذّر تنفيذ الحساب الآلي.\n"; }
+  });
+}
 function AssistantBody({content,accent}){
-  const {data,prose}=parseReport(content);
+  const computed=applyCalc(content);
+  const {data,prose}=parseReport(computed);
   return (<div>
     {data&&<ReportView data={data} accent={accent}/>}
     {prose&&<div style={{marginTop:data?10:0}}>{renderRich(prose)}</div>}
@@ -721,7 +923,7 @@ function PrintReport({msg,agent}){
     <div style={{fontFamily:"'IBM Plex Sans Arabic',sans-serif",color:T.ink,background:"#fff",padding:"4px 2px"}}>
       <div style={{borderBottom:`3px solid ${agent.accent}`,paddingBottom:13,marginBottom:18,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div>
-          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو · v10</div>
+          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو · v11</div>
           <div style={{fontSize:21,fontWeight:800,marginTop:6,fontFamily:"'Tajawal',sans-serif",color:T.ink}}>{agent.name}</div>
           <div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{agent.role}</div>
         </div>
@@ -897,7 +1099,7 @@ function App(){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div>
           <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:800,fontSize:isMobile?18:21,color:T.sideText,letterSpacing:".2px"}}>وكلاء الموارد البشرية</div>
-          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو · v10</div>
+          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو · v11</div>
         </div>
         <button onClick={()=>setShowSettings(true)} aria-label="الإعدادات" style={{border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)",color:T.sideText,borderRadius:10,padding:8}}><IconGear size={18}/></button>
       </div>
