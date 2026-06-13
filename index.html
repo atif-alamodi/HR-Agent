@@ -123,7 +123,7 @@ const COMMON = `
 - عند كتابة أي بريد أو خطاب رسمي اجعل التوقيع "فريق إدارة الموارد البشرية" فقط، ولا تذكر اسم أي شركة في التوقيع.
 - استند في كل ما يتعلق بنظام العمل السعودي إلى المرسوم م/44 النافذ في 19/2/2025.
 - كن دقيقًا. إن لم تكن متأكدًا من مادة نظامية أو رقم أو نسبة فاذكر ذلك بوضوح ولا تختلق أرقام مواد أو نسبًا.
-- لا تختلق حسابات رقمية لمكافأة نهاية الخدمة أو التأمينات أو التسوية النهائية. إن طلب المستخدم رقمًا دقيقًا فاطلب منه استخدام زر "حاسبة" داخل اللوحة الذي يحسب بالكود، أو بيّن المعادلة واطلب المدخلات بدل تقدير الناتج.
+- لا تختلق حسابات رقمية لمكافأة نهاية الخدمة أو التأمينات أو التسوية النهائية. بيّن المعادلة واطلب المدخلات اللازمة بدل تقدير الناتج، ونبّه المستخدم إلى التحقق من الأرقام قبل اعتمادها رسميًا.
 - خاطب المستخدم باسم "عاطف" عند المناسبة، وحافظ على نبرة مهنية محترمة.
 - نظّم إجاباتك بعناوين ونقاط عند الحاجة، وقدّم خطوات عملية قابلة للتطبيق.
 - السياق: المستخدم مدير الموارد البشرية والشؤون الإدارية في شركة تقنية مالية سعودية.
@@ -739,199 +739,6 @@ function PrintReport({msg,agent}){
   );
 }
 
-/* ============================ الحاسبة الحتمية (تحسب بالكود لا بالنموذج) ============================ */
-const fmtSAR=n=>{ n=Number(n)||0; return n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); };
-const GOSI_CAP=45000;
-const HRCALC={
-  causes:[
-    {id:"employer", label:"إنهاء من صاحب العمل (غير م80)"},
-    {id:"expiry",   label:"انتهاء عقد محدد المدة"},
-    {id:"mutual",   label:"إنهاء بالتراضي (م74)"},
-    {id:"art81",    label:"ترك العمل وفق م81 (مخالفة صاحب العمل)"},
-    {id:"retire",   label:"تقاعد"},
-    {id:"force",    label:"قوة قاهرة"},
-    {id:"resign",   label:"استقالة عادية"},
-    {id:"art80",    label:"فصل بسبب مشروع (م80)"},
-  ],
-  causeLabel(id){ const c=this.causes.find(x=>x.id===id); return c?c.label:id; },
-  eosRate(causeId, years){
-    if(causeId==="art80") return 0;
-    if(["employer","expiry","mutual","art81","retire","force"].includes(causeId)) return 1;
-    if(causeId==="resign"){
-      if(years<2) return 0;
-      if(years<5) return 1/3;
-      if(years<10) return 2/3;
-      return 1;
-    }
-    return 1;
-  },
-  eos(wage, years, causeId){
-    wage=Number(wage)||0; years=Number(years)||0;
-    const first=Math.min(years,5), after=Math.max(0,years-5);
-    const full=wage*(0.5*first + 1*after);
-    const rate=this.eosRate(causeId,years);
-    return { full, rate, entitled: full*rate, first, after };
-  },
-  gosi(wage, saudi, empRate, erRate){
-    wage=Number(wage)||0;
-    const base=Math.min(wage,GOSI_CAP);
-    const er = empRate!=null&&empRate!==""?Number(empRate):(saudi?9.75:0);
-    const cr = erRate!=null&&erRate!==""?Number(erRate):(saudi?11.75:2);
-    const empDed=base*er/100, erCon=base*cr/100;
-    return { base, empRate:er, erRate:cr, empDed, erCon, net: wage-empDed, capped: wage>GOSI_CAP };
-  },
-  settlementReport(inp){
-    const wage=Number(inp.wage)||0;
-    const years=Number(inp.years)||0;
-    const dayVal=wage/30;
-    const e=this.eos(wage, years, inp.causeId);
-    const leaveDays=Number(inp.leaveDays)||0;
-    const leavePay=leaveDays*dayVal;
-    const noticeDays=Number(inp.noticeDays)||0;
-    const noticePay=noticeDays*dayVal;
-    const unpaid=Number(inp.unpaid)||0;
-    let comp77=0, comp77label="";
-    const wrongful = inp.wrongful && inp.causeId==="employer";
-    if(wrongful){
-      if(inp.contractType==="fixed"){
-        comp77=(Number(inp.remainingMonths)||0)*wage;
-        comp77label="تعويض الإنهاء غير المشروع (م77 محدد المدة: أجر المدة المتبقية)";
-      } else {
-        comp77=Math.max(2*wage, 0.5*wage*years);
-        comp77label="تعويض الإنهاء غير المشروع (م77 غير محدد: 15 يومًا/سنة بحد أدنى شهرين)";
-      }
-    }
-    const total=unpaid+leavePay+e.entitled+noticePay+comp77;
-    const rows=[];
-    if(unpaid>0) rows.push(`| الأجور المتأخرة | مبلغ مُدخل | ${fmtSAR(unpaid)} |`);
-    if(leaveDays>0) rows.push(`| بدل رصيد الإجازات | ${leaveDays} يوم × ${fmtSAR(dayVal)} | ${fmtSAR(leavePay)} |`);
-    rows.push(`| مكافأة نهاية الخدمة | كاملة ${fmtSAR(e.full)} × ${(e.rate*100).toFixed(2)}% | ${fmtSAR(e.entitled)} |`);
-    if(noticeDays>0) rows.push(`| بدل الإشعار | ${noticeDays} يوم × ${fmtSAR(dayVal)} | ${fmtSAR(noticePay)} |`);
-    if(comp77>0) rows.push(`| تعويض م77 | ${inp.contractType==="fixed"?(Number(inp.remainingMonths)||0)+" شهر متبقٍ":"بحد أدنى شهرين"} | ${fmtSAR(comp77)} |`);
-    const md=[
-      "## حساب آلي للتسوية النهائية",
-      "حساب حتمي بالكود وفق نظام العمل (م/44). الأرقام محسوبة بالكود لا يولّدها النموذج اللغوي.",
-      "",
-      `السبب: ${this.causeLabel(inp.causeId)} | الأجر الشهري الشامل: ${fmtSAR(wage)} ريال | سنوات الخدمة: ${years}`,
-      "",
-      "| البند | التفصيل | المبلغ (ريال) |",
-      "|---|---|---|",
-      ...rows,
-      `| الإجمالي المستحق | | ${fmtSAR(total)} |`,
-      "",
-      "### تفصيل مكافأة نهاية الخدمة (م84)",
-      `- أول 5 سنوات: نصف شهر × ${e.first} سنة = ${fmtSAR(wage*0.5*e.first)} ريال`,
-      `- ما بعد 5 سنوات: شهر × ${e.after} سنة = ${fmtSAR(wage*e.after)} ريال`,
-      `- المكافأة الكاملة: ${fmtSAR(e.full)} ريال`,
-      `- نسبة الاستحقاق (م85): ${(e.rate*100).toFixed(2)}%`,
-      `- المستحق الفعلي: ${fmtSAR(e.entitled)} ريال`,
-      "",
-      "### ملاحظات",
-      "- قيمة يوم الإجازة على أساس الأجر الإجمالي ÷ 30.",
-      (inp.causeId==="art81"?"- ترك العمل وفق م81: لا يُضاف تعويض م77، وتُصرف المكافأة كاملة.":null),
-      (inp.causeId==="art80"?"- الفصل بسبب مشروع (م80): لا تُستحق مكافأة نهاية الخدمة.":null),
-      (inp.causeId==="resign"?"- الاستقالة العادية: النسبة بحسب مدة الخدمة (أقل من سنتين 0%، 2-5 الثلث، 5-10 الثلثان، 10 فأكثر كاملة).":null),
-      "- هذا حساب استرشادي؛ راجع الأرقام قبل الاعتماد الرسمي.",
-    ].filter(Boolean).join("\n");
-    return md;
-  },
-  gosiReport(inp){
-    const wage=Number(inp.wage)||0;
-    const g=this.gosi(wage, inp.saudi, inp.empRate, inp.erRate);
-    const md=[
-      "## حساب التأمينات الاجتماعية (GOSI)",
-      "حساب حتمي بالكود. النسب المعروضة افتراضية وقابلة للتعديل؛ تحقّق من النسب الرسمية للسنة الحالية قبل الاعتماد.",
-      "",
-      `الجنسية: ${inp.saudi?"سعودي":"غير سعودي"} | الأجر الخاضع المُدخل: ${fmtSAR(wage)} ريال`,
-      "",
-      "| البند | النسبة | المبلغ (ريال) |",
-      "|---|---|---|",
-      `| الأجر الخاضع (بحد أقصى ${fmtSAR(GOSI_CAP)}) | | ${fmtSAR(g.base)} |`,
-      `| حصة الموظف | ${g.empRate}% | ${fmtSAR(g.empDed)} |`,
-      `| حصة صاحب العمل | ${g.erRate}% | ${fmtSAR(g.erCon)} |`,
-      `| صافي الأجر بعد خصم حصة الموظف | | ${fmtSAR(g.net)} |`,
-      "",
-      "### ملاحظات",
-      `- السقف التأميني ${fmtSAR(GOSI_CAP)} ريال؛ ما فوقه لا يُحتسب عليه اشتراك.`,
-      (g.capped?"- الأجر يتجاوز السقف، فاحتُسب الاشتراك على 45,000 ريال.":null),
-      "- للسعودي افتراضيًا: الموظف 9.75% وصاحب العمل 11.75%. لغير السعودي: الأخطار المهنية 2% على صاحب العمل فقط.",
-    ].filter(Boolean).join("\n");
-    return md;
-  },
-};
-
-function CalcModal({open,onClose,onResult,accent}){
-  const [mode,setMode]=useState("settlement");
-  const [f,setF]=useState({wage:"",years:"",causeId:"employer",leaveDays:"",noticeDays:"",unpaid:"",wrongful:false,contractType:"indef",remainingMonths:"",saudi:true,empRate:"",erRate:""});
-  if(!open) return null;
-  const set=(k,v)=>setF(p=>({...p,[k]:v}));
-  const fld={width:"100%",border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 12px",fontSize:14,background:"#FBFCFB",color:T.ink,marginTop:4};
-  const lab={fontSize:12.5,fontWeight:700,color:T.ink,marginTop:12,display:"block"};
-  const run=()=>{
-    const md = mode==="settlement" ? HRCALC.settlementReport(f) : HRCALC.gosiReport(f);
-    onResult(md); onClose();
-  };
-  const tab=(id,txt)=>(<button onClick={()=>setMode(id)} style={{flex:1,border:`1px solid ${mode===id?accent:T.border}`,background:mode===id?hexToRgba(accent,.12):"#fff",color:mode===id?accent:T.muted,borderRadius:10,padding:"9px",fontSize:13.5,fontWeight:700}}>{txt}</button>);
-  return (
-    <div onClick={()=>onClose()} style={{position:"fixed",inset:0,background:"rgba(12,20,16,.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,zIndex:60}}>
-      <div onClick={e=>e.stopPropagation()} className="hra-fade hra-scroll" style={{background:"#fff",borderRadius:18,width:"100%",maxWidth:520,maxHeight:"90vh",overflowY:"auto",padding:"22px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-          <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:"'Tajawal',sans-serif"}}>الحاسبة الحتمية</div>
-          <button onClick={()=>onClose()} aria-label="إغلاق" style={{border:"none",background:"#F1F4F2",borderRadius:9,padding:6,color:T.muted}}><IconX size={18}/></button>
-        </div>
-        <div style={{fontSize:12,color:T.muted,marginBottom:12}}>تحسب الأرقام بالكود مباشرةً ثم تُدرَج في المحادثة. لا يتدخل النموذج اللغوي في الحساب.</div>
-        <div style={{display:"flex",gap:8,marginBottom:6}}>{tab("settlement","التسوية ونهاية الخدمة")}{tab("gosi","التأمينات GOSI")}</div>
-
-        {mode==="settlement"?(<div>
-          <label style={lab}>الأجر الشهري الشامل (ريال)</label>
-          <input style={fld} type="number" inputMode="decimal" value={f.wage} onChange={e=>set("wage",e.target.value)} placeholder="مثال: 12000"/>
-          <label style={lab}>سنوات الخدمة (يقبل الكسور)</label>
-          <input style={fld} type="number" inputMode="decimal" value={f.years} onChange={e=>set("years",e.target.value)} placeholder="مثال: 7.5"/>
-          <label style={lab}>سبب انتهاء العلاقة</label>
-          <select style={fld} value={f.causeId} onChange={e=>set("causeId",e.target.value)}>
-            {HRCALC.causes.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
-          <label style={lab}>رصيد الإجازات غير المستخدمة (أيام) — اختياري</label>
-          <input style={fld} type="number" inputMode="decimal" value={f.leaveDays} onChange={e=>set("leaveDays",e.target.value)} placeholder="مثال: 17"/>
-          <label style={lab}>بدل الإشعار (أيام) — اختياري</label>
-          <input style={fld} type="number" inputMode="decimal" value={f.noticeDays} onChange={e=>set("noticeDays",e.target.value)} placeholder="مثال: 60"/>
-          <label style={lab}>أجور متأخرة (مبلغ ريال) — اختياري</label>
-          <input style={fld} type="number" inputMode="decimal" value={f.unpaid} onChange={e=>set("unpaid",e.target.value)} placeholder="مثال: 18000"/>
-          {f.causeId==="employer"&&(<div style={{marginTop:12,border:`1px solid ${T.border}`,borderRadius:12,padding:"10px 12px",background:"#FBFCFB"}}>
-            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13.5,fontWeight:700,color:T.ink,cursor:"pointer"}}>
-              <input type="checkbox" checked={f.wrongful} onChange={e=>set("wrongful",e.target.checked)}/> إنهاء غير مشروع/تعسفي (يستحق تعويض م77)
-            </label>
-            {f.wrongful&&(<div>
-              <label style={lab}>نوع العقد</label>
-              <select style={fld} value={f.contractType} onChange={e=>set("contractType",e.target.value)}>
-                <option value="indef">غير محدد المدة (15 يومًا/سنة، بحد أدنى شهرين)</option>
-                <option value="fixed">محدد المدة (أجر المدة المتبقية)</option>
-              </select>
-              {f.contractType==="fixed"&&(<div>
-                <label style={lab}>عدد الأشهر المتبقية على العقد</label>
-                <input style={fld} type="number" inputMode="decimal" value={f.remainingMonths} onChange={e=>set("remainingMonths",e.target.value)} placeholder="مثال: 6"/>
-              </div>)}
-            </div>)}
-          </div>)}
-        </div>):(<div>
-          <label style={lab}>الأجر الخاضع للتأمينات (ريال)</label>
-          <input style={fld} type="number" inputMode="decimal" value={f.wage} onChange={e=>set("wage",e.target.value)} placeholder="مثال: 12000"/>
-          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13.5,fontWeight:700,color:T.ink,marginTop:14,cursor:"pointer"}}>
-            <input type="checkbox" checked={f.saudi} onChange={e=>set("saudi",e.target.checked)}/> الموظف سعودي
-          </label>
-          <div style={{display:"flex",gap:10}}>
-            <div style={{flex:1}}><label style={lab}>نسبة الموظف %</label><input style={fld} type="number" inputMode="decimal" value={f.empRate} onChange={e=>set("empRate",e.target.value)} placeholder={f.saudi?"9.75":"0"}/></div>
-            <div style={{flex:1}}><label style={lab}>نسبة صاحب العمل %</label><input style={fld} type="number" inputMode="decimal" value={f.erRate} onChange={e=>set("erRate",e.target.value)} placeholder={f.saudi?"11.75":"2"}/></div>
-          </div>
-          <div style={{fontSize:11.5,color:T.muted,marginTop:8}}>اترك النسب فارغة لاستخدام الافتراضي. النسب قابلة للتعديل، وتحقَّق منها رسميًا للسنة الحالية.</div>
-        </div>)}
-
-        <button onClick={run} style={{marginTop:20,width:"100%",border:"none",background:accent,color:"#fff",borderRadius:12,padding:"13px",fontSize:15,fontWeight:800}}>احسب وأدرج في المحادثة</button>
-      </div>
-    </div>
-  );
-}
-
 function App(){
   const [activeId,setActiveId]=useState(AGENTS[0].id);
   const [conversations,setConversations]=useState({});
@@ -954,8 +761,6 @@ function App(){
   const msgs=conversations[activeId]||[];
   const [printMsg,setPrintMsg]=useState(null);
   const [pdfBusy,setPdfBusy]=useState(false);
-  const [calcOpen,setCalcOpen]=useState(false);
-  const injectCalc=(md)=>{ setConversations(p=>({...p,[activeId]:[...(p[activeId]||[]),{id:uid(),role:"assistant",content:md,display:md,atts:[]}]})); setError(null); };
   const lastReport=[...msgs].reverse().find(m=>m.role==="assistant");
   useEffect(()=>{
     if(!printMsg) return;
@@ -1292,11 +1097,6 @@ function App(){
           {pdfBusy?(<><svg className="hra-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg> جارٍ التحضير</>):(<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v11M7 10l5 5 5-5M5 21h14"/></svg> تحميل PDF</>)}
         </button>
       )}
-      {(activeId==="comp"||activeId==="law")&&(
-        <button onClick={()=>setCalcOpen(true)} title="حاسبة حتمية (نهاية الخدمة والتأمينات)" style={{display:"flex",alignItems:"center",gap:6,border:`1px solid ${hexToRgba(agent.accent,.45)}`,background:hexToRgba(agent.accent,.08),color:agent.accent,borderRadius:10,padding:big?"7px 12px":"6px 9px",fontSize:12.5,fontWeight:700}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/></svg> حاسبة
-        </button>
-      )}
       <button onClick={newChat} style={{display:"flex",alignItems:"center",gap:6,border:`1px solid ${T.border}`,background:"#fff",color:T.muted,borderRadius:10,padding:big?"7px 12px":"6px 9px",fontSize:12.5,fontWeight:600}}>
         <IconPlus size={15}/> {agent.intake?"تحليل جديد":"محادثة جديدة"}
       </button>
@@ -1335,7 +1135,6 @@ function App(){
       </main>
 
       {showSettings&&<Settings onClose={()=>{ setShowSettings(false); setError(null); setCfgVersion(v=>v+1); }}/>}
-      <CalcModal open={calcOpen} onClose={()=>setCalcOpen(false)} onResult={injectCalc} accent={agent.accent}/>
     </div>
     {printMsg&&(
       <div id="print-area" dir="rtl" style={{position:"fixed",left:"-10000px",top:0,width:794,background:"#fff",padding:"22px 26px"}}>
