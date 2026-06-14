@@ -822,7 +822,8 @@ async function fileToBlock(file){
     return {type:"image",source:{type:"base64",media_type,data}};
   }
   const text=await extractText(file);
-  return {type:"text",text:`\n\n[ملف مرفق: ${file.name}]\n${text}`};
+  const _cap=6000; const _t=(text&&text.length>_cap)?text.slice(0,_cap)+"\n…[تم اختصار نص الملف لتسريع المعالجة]":text;
+  return {type:"text",text:`\n\n[ملف مرفق: ${file.name}]\n${_t}`};
 }
 
 function getConfig(){
@@ -846,25 +847,46 @@ async function callAI(system,messages,modelOverride){
   const cfg=getConfig();
   const CF_MODEL="@cf/meta/llama-3.3-70b-instruct-fp8-fast";
   const useModel = cfg.worker ? (modelOverride||CF_MODEL) : (cfg.model||"claude-sonnet-4-6");
-  const payload={model:useModel,max_tokens:4096,system,messages:sanitize(messages)};
-  let res;
-  if(cfg.worker){
-    const headers={"content-type":"application/json"};
-    if(cfg.token) headers["x-app-token"]=cfg.token;
-    res=await fetch(cfg.worker,{method:"POST",headers,body:JSON.stringify(payload)});
-  } else if(cfg.key){
-    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(payload)});
-  } else {
-    throw new Error("NO_CONFIG");
+  const MAXTOK=2048;
+  const baseMsgs=sanitize(messages);
+  const trimmed=baseMsgs.map((m,i)=>{
+    if(i===baseMsgs.length-1) return m;
+    if(typeof m.content==="string" && m.content.length>2500) return {role:m.role,content:m.content.slice(0,2500)+"\n…[مختصر]"};
+    if(Array.isArray(m.content)) return {role:m.role,content:m.content.map(b=>(b.type==="text"&&b.text&&b.text.length>2500)?{...b,text:b.text.slice(0,2500)+"\n…[مختصر]"}:b)};
+    return m;
+  });
+  const payload={model:useModel,max_tokens:MAXTOK,system,messages:trimmed};
+  const url = cfg.worker || (cfg.key?"https://api.anthropic.com/v1/messages":null);
+  if(!url) throw new Error("NO_CONFIG");
+  const headers = cfg.worker
+    ? Object.assign({"content-type":"application/json"}, cfg.token?{"x-app-token":cfg.token}:{})
+    : {"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
+  async function once(){
+    let ctrl=null,tid=null;
+    try{ ctrl=new AbortController(); tid=setTimeout(function(){try{ctrl.abort();}catch(_){}} ,90000); }catch(_){ ctrl=null; }
+    try{
+      const res=await fetch(url,{method:"POST",headers,body:JSON.stringify(payload),signal:ctrl?ctrl.signal:undefined});
+      if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("HTTP "+res.status+(t?(": "+t.slice(0,180)):"")); }
+      const data=await res.json();
+      return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+    } finally { if(tid) clearTimeout(tid); }
   }
-  if(!res.ok){ const t=await res.text().catch(()=> ""); throw new Error("HTTP "+res.status+(t?(": "+t.slice(0,180)):"")); }
-  const data=await res.json();
-  const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+  let text;
+  try{ text=await once(); }
+  catch(e1){
+    const mm=(e1&&e1.message)||"";
+    const transient=(e1&&e1.name==="AbortError")||/Failed to fetch|NetworkError|load failed|timeout/i.test(mm);
+    if(!transient) throw e1;
+    await new Promise(r=>setTimeout(r,1000));
+    text=await once();
+  }
   return text||"تعذّر توليد رد.";
 }
 function errMsg(e){
   if(e&&e.message==="NO_CONFIG") return "لم يتم إعداد الاتصال بالذكاء الاصطناعي. افتح الإعدادات وأضف رابط الخادم (Worker) أو مفتاح الـ API.";
-  return "تعذّر الوصول إلى الوكيل: "+(e&&e.message?e.message:"خطأ غير معروف");
+  const m=(e&&e.message)||"";
+  if((e&&e.name==="AbortError")||/Failed to fetch|NetworkError|load failed/i.test(m)) return "تعذّر إكمال الطلب: استغرق وقتًا أطول من اللازم. النموذج المجاني بطيء على المدخلات الكبيرة — قلّل حجم الملف المرفق أو أعد المحاولة.";
+  return "تعذّر الوصول إلى الوكيل: "+(m||"خطأ غير معروف");
 }
 
 /* ============================ Settings ============================ */
@@ -923,7 +945,7 @@ function PrintReport({msg,agent}){
     <div style={{fontFamily:"'IBM Plex Sans Arabic',sans-serif",color:T.ink,background:"#fff",padding:"4px 2px"}}>
       <div style={{borderBottom:`3px solid ${agent.accent}`,paddingBottom:13,marginBottom:18,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div>
-          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو · v11</div>
+          <div style={{fontSize:12.5,color:T.brass,fontWeight:800,letterSpacing:.2}}>وكلاء الموارد البشرية · نُمكّن النمو · v12</div>
           <div style={{fontSize:21,fontWeight:800,marginTop:6,fontFamily:"'Tajawal',sans-serif",color:T.ink}}>{agent.name}</div>
           <div style={{fontSize:12.5,color:T.muted,marginTop:2}}>{agent.role}</div>
         </div>
@@ -1056,7 +1078,7 @@ function App(){
     let txt=hasJd
       ? `الوصف الوظيفي أو ملخص الوظيفة:\n${jobDesc.trim()}\n\nعدد المرشحين: ${ready.length}\n`
       : `لم يُرفق وصف وظيفي ولا ملخص للوظيفة. استنبط الدور المناسب من السيرة نفسها واذكر ذلك صراحة، واجعل النسب عامة تقريبية، وأضف في التوصية سطرًا يوصي برفع الوصف الوظيفي أو كتابة ملخص سريع للوظيفة ومهامها لرفع دقة النتائج.\n\nعدد المرشحين: ${ready.length}\n`;
-    ready.forEach((c,i)=>{ txt+=`\n===== المرشح ${i+1}: ${c.name} =====\n${c.text}\n`; });
+    ready.forEach((c,i)=>{ const ct=(c.text&&c.text.length>6000)?c.text.slice(0,6000)+"\n…[مختصر]":c.text; txt+=`\n===== المرشح ${i+1}: ${c.name} =====\n${ct}\n`; });
     txt+=`\n\nالمطلوب: حلّل بعمق وتوازن ودقة عالية والتزم بالأقسام والترتيب وجدول التقييم والتوصية بنسبة قوة كما في تعليماتك، ابدأ ردك بكتلة <<<HRDATA>>> ثم اكتب التقرير المبوّب بعدها.`;
     const userMsg={id:uid(),role:"user",content:txt,display:`مفاضلة ${ready.length} مرشحين${jobDesc.trim()?" حسب الوصف الوظيفي":""}`,atts:ready.map(c=>c.name)};
     const next=[userMsg];
@@ -1075,7 +1097,7 @@ function App(){
     setLoading(true); setError(null);
     let txt=`الوظيفة أو الدور: ${intRole.trim()||"(غير محدد)"}\n\nأسئلة المقابلة وإجابات المرشح:\n`;
     if(pasted) txt+=pasted+"\n";
-    ready.forEach((c,i)=>{ txt+=`\n===== تفريغ مرفق ${i+1}: ${c.name} =====\n${c.text}\n`; });
+    ready.forEach((c,i)=>{ const ct=(c.text&&c.text.length>6000)?c.text.slice(0,6000)+"\n…[مختصر]":c.text; txt+=`\n===== تفريغ مرفق ${i+1}: ${c.name} =====\n${ct}\n`; });
     txt+=`\n\nالمطلوب: حلّل بعمق ودقة عالية والتزم بالأقسام والترتيب وجدول التقييم والتوصية بنسبة الجاهزية كما في تعليماتك، ابدأ ردك بكتلة <<<HRDATA>>> ثم اكتب التقرير المبوّب بعدها.`;
     const userMsg={id:uid(),role:"user",content:txt,display:`تحليل مقابلة${intRole.trim()?" لدور "+intRole.trim():""}`,atts:ready.map(c=>c.name)};
     const next=[userMsg];
@@ -1099,7 +1121,7 @@ function App(){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div>
           <div style={{fontFamily:"'Tajawal',sans-serif",fontWeight:800,fontSize:isMobile?18:21,color:T.sideText,letterSpacing:".2px"}}>وكلاء الموارد البشرية</div>
-          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو · v11</div>
+          <div style={{marginTop:4,fontSize:12.5,color:T.brass,fontWeight:600,fontFamily:"'Tajawal',sans-serif"}}>نُمكّن النمو · v12</div>
         </div>
         <button onClick={()=>setShowSettings(true)} aria-label="الإعدادات" style={{border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)",color:T.sideText,borderRadius:10,padding:8}}><IconGear size={18}/></button>
       </div>

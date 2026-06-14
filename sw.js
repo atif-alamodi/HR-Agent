@@ -1,4 +1,4 @@
-const CACHE = "hra-v6";
+const CACHE = "hra-v7";
 const SHELL = ["./", "./index.html", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest"];
 self.addEventListener("install", (e) => {
   e.waitUntil(
